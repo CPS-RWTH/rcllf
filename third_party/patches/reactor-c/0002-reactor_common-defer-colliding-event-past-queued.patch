@@ -1,0 +1,35 @@
+From: rcllf local patch
+Subject: [PATCH] reactor_common: defer a colliding event past every queued one
+
+_lf_schedule_at_tag() handles an event that lands on a tag where the same
+trigger already has a queued event. Under the default `defer` policy it
+moved the new event one microstep later, without checking that tag. A
+federate schedules every network message through this function. An `after d`
+connection maps the tags (t,0), (t,1), (t,2) of one sender time to the
+one tag (t+d,0), so the second message moved to (t+d,1) and the third also
+moved to (t+d,1). Two events of one trigger at one tag set the port twice
+before its reactions ran, and the third message was lost. lf_schedule_trigger()
+(lib/schedule.c) already loops until a free microstep; this does the same.
+
+Upstream reactor-c main still has the single bump (checked 2026-10-12).
+---
+--- a/core/reactor_common.c
++++ b/core/reactor_common.c
+@@ -589,10 +589,13 @@
+       return 0;
+       break;
+     default:
+-      // Adding a microstep to the original
+-      // intended tag.
+-      tag.microstep++;
+-      e->base.tag = tag;
++      // Adding a microstep to the original intended tag, past every
++      // event of this trigger already queued: two events of one trigger
++      // at one tag would leave only the last payload.
++      do {
++        tag.microstep++;
++        e->base.tag = tag;
++      } while (pqueue_tag_find_equal_same_tag(env->event_q, (pqueue_tag_element_t*)e) != NULL);
+       if (lf_is_tag_after_stop_tag(env, tag)) {
+         // Scheduling e will incur a microstep after the stop tag,
+         // which is illegal.

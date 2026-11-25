@@ -1,0 +1,17 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# rcllf execution config for launch/bringup.launch.py, read by colcon lf-generate.
+nodes:
+  sleeper:
+    auto_transition: false  # the supervisor activates it from its timer
+# Every callback publishes one sample on one topic (one publish
+# call each). The analyzer cannot prove it because the nodes hand `this` to a
+# global and a report helper, so without the bound every edge stays legacy
+# (`burst_unbounded`).
+# after_delay pins the 1 ms in-process delay the recorded runs and
+# scripts/check_rebind.py (--link-ms 1, the 1 ms service hops) assume. The
+# generator default is 0; at 0 every REBIND row moves to the
+# publication tag and the fixtures no longer apply.
+defaults:
+  max_publishes_per_invocation: 1
+  after_delay: "1 msec"

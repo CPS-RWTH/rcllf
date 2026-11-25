@@ -1,0 +1,48 @@
+From: rcllf <noreply@rcllf.invalid>
+Subject: [PATCH] rcllf marker for 0001-socket_common-retry-accept-on-timeout
+
+Puts the string "rcllf-reactor-c-patch:0001-socket_common-retry-accept-on-timeout"
+into section rcllf_reactor_c_patches of every program that compiles this file.
+A tool can read the section back from the running program to check that
+a configured patch is present.
+
+The hunk removes and re-adds a line that only the fix has, so it applies only on
+top of the fix, whichever patch version put it there. The marker sits outside
+the fix hunk's context, so the fix patch still reads "previously applied" on a
+tree that has both. Kept apart from the fix so a runtime patched before markers
+existed (its fix reads "already applied" and is skipped) still gets the marker.
+socket_common.c is compiled into federated programs only.
+
+Rcllf-Marker-For: 0001-socket_common-retry-accept-on-timeout
+Rcllf-Marker-Scope: federated
+---
+--- a/network/impl/src/socket_common.c
++++ b/network/impl/src/socket_common.c
+@@ -205,19 +205,26 @@
+       // ECONNABORTED: a connection was aborted before accept() could complete — not fatal.
+       // EINVAL: the socket was shut down (e.g., shutdown_socket() was called to unblock this
+       // accept() intentionally when the RTI is shutting down) — expected, not an error.
+-      if (errno != ECONNABORTED && errno != EINVAL) {
++      if (errno != ECONNABORTED && errno != EINVAL) {
+         lf_print_warning("Failed to accept the socket. %s.", strerror(errno));
+       }
+       break;
+     } else if (errno == EPERM) {
+       lf_print_error_system_failure("Firewall permissions prohibit connection.");
+       return -1;
+     } else {
+       // Try again
+       lf_print_warning("Failed to accept the socket. %s. Trying again.", strerror(errno));
+       continue;
+     }
+   }
++  {
++    // rcllf patch marker: the benchmark harness reads it back from the running
++    // program. The hunk also rewrites a line of the fix, so it applies only on top of it.
++    static const char rcllf_marker[]
++        __attribute__((section("rcllf_reactor_c_patches"), used, unused)) =
++        "rcllf-reactor-c-patch:0001-socket_common-retry-accept-on-timeout";
++  }
+   return socket_id;
+ }
+ 

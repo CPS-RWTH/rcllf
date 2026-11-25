@@ -1,0 +1,12 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# Expectations below were derived by hand.
+# CAP1 the oldest input-1 sample is the victim.
+params epoch=1 delta=10 lateness=0,0 capacity=8,2 retention=1000 timeout=500
+admit 1 100 1:b:1 @101
+admit 1 110 1:b:2 @111
+admit 1 120 1:b:3 @121
+close shutdown @200
+expect S 1:b:1 OVERFLOW @121
+expect S 1:b:2 FLUSHED @200
+expect S 1:b:3 FLUSHED @200

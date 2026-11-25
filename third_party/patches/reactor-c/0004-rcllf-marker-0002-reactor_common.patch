@@ -1,0 +1,45 @@
+From: rcllf <noreply@rcllf.invalid>
+Subject: [PATCH] rcllf marker for 0002-reactor_common-defer-colliding-event-past-queued
+
+Puts the string "rcllf-reactor-c-patch:0002-reactor_common-defer-colliding-event-past-queued"
+into section rcllf_reactor_c_patches of every program that compiles this file.
+A tool can read the section back from the running program to check that
+a configured patch is present.
+
+The hunk removes and re-adds a line that only the fix has, so it applies only on
+top of the fix, whichever patch version put it there. The marker sits outside
+the fix hunk's context, so the fix patch still reads "previously applied" on a
+tree that has both. Kept apart from the fix so a runtime patched before markers
+existed (its fix reads "already applied" and is skipped) still gets the marker.
+reactor_common.c is compiled into every program.
+
+Rcllf-Marker-For: 0002-reactor_common-defer-colliding-event-past-queued
+Rcllf-Marker-Scope: all
+---
+--- a/core/reactor_common.c
++++ b/core/reactor_common.c
+@@ -595,16 +595,23 @@
+       do {
+         tag.microstep++;
+         e->base.tag = tag;
+-      } while (pqueue_tag_find_equal_same_tag(env->event_q, (pqueue_tag_element_t*)e) != NULL);
++      } while (pqueue_tag_find_equal_same_tag(env->event_q, (pqueue_tag_element_t*)e) != NULL);
+       if (lf_is_tag_after_stop_tag(env, tag)) {
+         // Scheduling e will incur a microstep after the stop tag,
+         // which is illegal.
+         _lf_done_using(token);
+         lf_recycle_event(env, e);
+         return 0;
+       }
+     }
+   }
++  {
++    // rcllf patch marker: the benchmark harness reads it back from the running
++    // program. The hunk also rewrites a line of the fix, so it applies only on top of it.
++    static const char rcllf_marker[]
++        __attribute__((section("rcllf_reactor_c_patches"), used, unused)) =
++        "rcllf-reactor-c-patch:0002-reactor_common-defer-colliding-event-past-queued";
++  }
+   pqueue_tag_insert(env->event_q, (pqueue_tag_element_t*)e);
+   trigger_handle_t return_value = env->_lf_handle++;
+   if (env->_lf_handle < 0) {

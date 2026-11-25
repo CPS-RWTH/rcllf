@@ -1,0 +1,16 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# Two federates for reader.launch.py. The driver reaches the reader
+# through an in-process pointer, so both share a federate; the feeder sits in
+# the other one, so the re-created reader is an ingress reader of the
+# cross-federate /rebind/feed edge.
+system: lifecycle_rebind_example_reader
+
+federates:
+  source:
+    nodes:
+      - feeder
+  sink:
+    nodes:
+      - driver
+      - reader

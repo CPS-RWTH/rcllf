@@ -1,0 +1,82 @@
+[INFO] [launch]: All log files can be found below /tmp/home/.ros/log/2026-11-17-15-34-14-871214-host01-11067
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [Bringup-1]: process started with pid [11071]
+[Bringup-1] [INFO] [1794929654.919179756] [ros2_lf_binding]: rcllf: startup bounded to 30000 ms (RCLLF_STARTUP_TIMEOUT_MS) up to the discovery wait; past it the process exits with code 124 without cleanup
+[Bringup-1] [INFO] [1794929654.932025769] [lf_component_manager]: ros2_lf_runtime_init: loaded execution policy from /workspace/packages/install/lf_generated_pubsub_example_bringup/share/lf_generated_pubsub_example_bringup/exec_config.json (1 subscription row(s))
+[Bringup-1] [INFO] [1794929654.935462085] [lf_component_manager]: ros2_lf_runtime_init: loading components from /workspace/packages/install/lf_generated_pubsub_example_bringup/share/lf_generated_pubsub_example_bringup/system.json
+[Bringup-1] [INFO] [1794929654.938920660] [publisher_node]: Publisher node started.
+[Bringup-1] [INFO] [1794929654.941550907] [subscriber_node]: Subscriber node started.
+[Bringup-1] [INFO] [1794929654.942489516] [lf_component_manager]: Found 0 component instance(s) to load
+[Bringup-1] [INFO] [1794929654.943084455] [lf_component_manager]: Found 2 non-component node(s) in registry
+[Bringup-1] [INFO] [1794929654.943107385] [lf_component_manager]: Registered non-component node: PublisherNode
+[Bringup-1] [INFO] [1794929654.943118825] [lf_component_manager]: Registered non-component node: SubscriberNode
+[Bringup-1] [INFO] [1794929654.943583485] [ros2_lf_binding.corr]: rcllf corr: edge 0 is local, decided when its publish returns, no cutoff
+[Bringup-1] [INFO] [1794929654.943911474] [ros2_lf_binding]: rcllf ingress: thread started (gettid 11087)
+[Bringup-1] [INFO] [1794929654.944101964] [ros2_lf_binding.corr]: rcllf corr: admitted edge 0 PublisherNode -> SubscriberNode on '/sensor_data' (d = 0 ns, T = 100000000 ns, L = 200000000 ns, B = 1, retain = 2, carrier = 1, reader depth 10, user 10, reader reliable, join blocking)
+[Bringup-1] [INFO] [1794929654.944406564] [ros2_lf_binding]: ros2_lf_match_warmup: stage=local_edges topic=/sensor_data side=reader have=1 want=1 matched=1 match_us=1 lost=0
+[Bringup-1] [INFO] [1794929654.944416034] [ros2_lf_binding]: ros2_lf_match_warmup: stage=local_edges topic=/sensor_data side=writer have=1 want=1 matched=1 match_us=1 lost=0
+[Bringup-1] [INFO] [1794929654.944419644] [ros2_lf_binding]: ros2_lf_match_warmup: stage=local_edges topic=/sensor_data side=pair have=1 want=1 matched=1 match_us=1 lost=0
+[Bringup-1] [INFO] [1794929654.944423134] [ros2_lf_binding]: ros2_lf_match_warmup: stage=local_edges targets=3 matched=3 timed_out=0 longest_match_us=1 timeout_ms=5000
+[Bringup-1] [INFO] [1794929654.944453184] [ros2_lf_binding.corr]: rcllf corr: run_epoch 6974704350200022850, 1 admitted edge(s), 0 legacy edge(s)
+[Bringup-1] [INFO] [1794929654.945714152] [lf_component_manager]: ros2_lf_runtime_wait_ready: waiting for 3 subscription(s) and 2 local publisher topic(s) to match (timeout 5000 ms)
+[Bringup-1] [INFO] [1794929654.945759762] [ros2_lf_binding]: ros2_lf_match_warmup: stage=wait_ready topic=/parameter_events side=reader have=4 want=1 matched=1 match_us=0 lost=0
+[Bringup-1] [INFO] [1794929654.945765352] [ros2_lf_binding]: ros2_lf_match_warmup: stage=wait_ready topic=/sensor_data side=reader have=1 want=1 matched=1 match_us=0 lost=0
+[Bringup-1] [INFO] [1794929654.945768822] [ros2_lf_binding]: ros2_lf_match_warmup: stage=wait_ready topic=/parameter_events side=reader have=4 want=1 matched=1 match_us=0 lost=0
+[Bringup-1] [INFO] [1794929654.945772202] [ros2_lf_binding]: ros2_lf_match_warmup: stage=wait_ready topic=/parameter_events side=writer have=4 want=2 matched=1 match_us=0 lost=0
+[Bringup-1] [INFO] [1794929654.945775532] [ros2_lf_binding]: ros2_lf_match_warmup: stage=wait_ready topic=/sensor_data side=writer have=1 want=1 matched=1 match_us=0 lost=0
+[Bringup-1] [INFO] [1794929654.945779032] [ros2_lf_binding]: ros2_lf_match_warmup: stage=wait_ready targets=5 matched=5 timed_out=0 longest_match_us=0 timeout_ms=5000
+[Bringup-1] [INFO] [1794929654.945783242] [lf_component_manager]: ros2_lf_runtime_wait_ready: all subscriptions matched; LF start time anchored
+[Bringup-1] [INFO] [1794929654.946476991] [ros2_lf_binding]: Bound timer RID 0 (PublisherNode::timer_callback, period 500000000 ns)
+[Bringup-1] [INFO] [1794929654.946493981] [ros2_lf_binding]: ros2_lf_bind_node(PublisherNode): 1 timer(s), 0 subscription(s), 0 service(s), 0 client(s) bound
+[Bringup-1] [INFO] [1794929654.946478391] [ros2_lf_binding]: Bound subscription RID 1 (SubscriberNode::topic_callback, topic 'sensor_data', resolved '/sensor_data', take_mode=skip timeout_ms=100)
+[Bringup-1] [INFO] [1794929654.946553701] [ros2_lf_binding]: ros2_lf_bind_node(PublisherNode): subscription '/parameter_events' belongs to the rclcpp TimeSource, no RID needed
+[Bringup-1] [INFO] [1794929654.946586411] [ros2_lf_binding]: ros2_lf_bind_node(SubscriberNode): 0 timer(s), 1 subscription(s), 0 service(s), 0 client(s) bound
+[Bringup-1] [INFO] [1794929654.946607761] [ros2_lf_binding]: ros2_lf_bind_node(SubscriberNode): subscription '/parameter_events' belongs to the rclcpp TimeSource, no RID needed
+[Bringup-1] [INFO] [1794929654.946638371] [ros2_lf_binding]: ros2_lf_take_stats: reason=periodic mode=per-sub timeout_ms=per-sub sub_first_try=0 sub_skipped=0 sub_waited=0 wait_total_us=0 wait_max_us=0 wait_timeouts=0
+[Bringup-1] [INFO] [1794929654.946675981] [publisher_node]: Publishing: temp=20.0, humidity=40.0, pressure=1013.0
+[Bringup-1] [INFO] [1794929654.947293120] [subscriber_node]: I heard: temp=20.0, humidity=40.0, pressure=1013.0
+[Bringup-1] [INFO] [1794929654.947590509] [ros2_lf_binding]: rcllf ingress: node '/publisher_node' (key 'PublisherNode'): 7 infrastructure service(s) admitted, ingress_capacity 8
+[Bringup-1] [INFO] [1794929654.947932169] [ros2_lf_binding]: rcllf ingress: node '/subscriber_node' (key 'SubscriberNode'): 7 infrastructure service(s) admitted, ingress_capacity 8
+[Bringup-1] [INFO] [1794929655.446299542] [publisher_node]: Publishing: temp=21.0, humidity=41.0, pressure=1014.0
+[Bringup-1] [INFO] [1794929655.446653432] [subscriber_node]: I heard: temp=21.0, humidity=41.0, pressure=1014.0
+[Bringup-1] [INFO] [1794929655.946306163] [publisher_node]: Publishing: temp=22.0, humidity=42.0, pressure=1015.0
+[Bringup-1] [INFO] [1794929655.946597443] [subscriber_node]: I heard: temp=99.0, humidity=42.0, pressure=1015.0
+[Bringup-1] [INFO] [1794929656.446380015] [publisher_node]: Publishing: temp=23.0, humidity=43.0, pressure=1016.0
+[Bringup-1] [INFO] [1794929656.446750614] [subscriber_node]: I heard: temp=23.0, humidity=43.0, pressure=1016.0
+[Bringup-1] [INFO] [1794929656.946310437] [publisher_node]: Publishing: temp=24.0, humidity=44.0, pressure=1017.0
+[Bringup-1] [INFO] [1794929656.946619766] [subscriber_node]: I heard: temp=24.0, humidity=44.0, pressure=1017.0
+[Bringup-1] [INFO] [1794929657.446217410] [publisher_node]: Publishing: temp=25.0, humidity=45.0, pressure=1018.0
+[Bringup-1] [INFO] [1794929657.446441529] [subscriber_node]: I heard: temp=25.0, humidity=45.0, pressure=1018.0
+[Bringup-1] [INFO] [1794929657.946306992] [publisher_node]: Publishing: temp=26.0, humidity=46.0, pressure=1019.0
+[Bringup-1] [INFO] [1794929657.946639712] [subscriber_node]: I heard: temp=26.0, humidity=46.0, pressure=1019.0
+[Bringup-1] [INFO] [1794929658.446250166] [publisher_node]: Publishing: temp=27.0, humidity=47.0, pressure=1020.0
+[Bringup-1] [INFO] [1794929658.446520535] [subscriber_node]: I heard: temp=27.0, humidity=47.0, pressure=1020.0
+[Bringup-1] [INFO] [1794929658.946310319] [publisher_node]: Publishing: temp=28.0, humidity=48.0, pressure=1021.0
+[Bringup-1] [INFO] [1794929658.946630109] [subscriber_node]: I heard: temp=28.0, humidity=48.0, pressure=1021.0
+[Bringup-1] [INFO] [1794929659.446246464] [publisher_node]: Publishing: temp=29.0, humidity=49.0, pressure=1022.0
+[Bringup-1] [INFO] [1794929659.446524574] [subscriber_node]: I heard: temp=29.0, humidity=49.0, pressure=1022.0
+[Bringup-1] ---- Start execution on Tue Nov 17 15:34:14 2026 ---- plus 946083412 nanoseconds
+[Bringup-1] [INFO] [1794929659.946263109] [publisher_node]: Publishing: temp=30.0, humidity=50.0, pressure=1023.0
+[Bringup-1] [INFO] [1794929659.946526518] [subscriber_node]: I heard: temp=30.0, humidity=50.0, pressure=1023.0
+[Bringup-1] [INFO] [1794929660.446313984] [publisher_node]: Publishing: temp=31.0, humidity=51.0, pressure=1024.0
+[Bringup-1] [INFO] [1794929660.446627784] [subscriber_node]: I heard: temp=31.0, humidity=51.0, pressure=1024.0
+[Bringup-1] [INFO] [1794929660.684930891] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[Bringup-1] [INFO] [1794929660.684999771] [ros2_lf_binding]: rcllf: process end bounded to 3000 ms (RCLLF_STOP_TIMEOUT_MS) from the last progress, at most 12000 ms in all (RCLLF_STOP_MAX_MS); past it the process exits with code 124 without cleanup
+[Bringup-1] [INFO] [1794929660.685041131] [ros2_lf_binding.corr]: rcllf corr: LF stop requested with 0 join(s) pending; each ends within 1500 ms, pending at stop if its sample is still in flight
+[Bringup-1] [INFO] [1794929660.685058591] [ros2_lf_binding]: rclcpp shut down (signal); requesting LF stop
+[Bringup-1] [INFO] [1794929660.685226781] [ros2_lf_binding]: rcllf ingress: thread joined
+[Bringup-1] [INFO] [1794929660.685504890] [ros2_lf_binding.corr]: rcllf corr: stop drain waited 0 ms (bound 750 ms) for 1 reliable publisher(s) to be acknowledged; 0 not acknowledged
+[Bringup-1] [INFO] [1794929660.685530730] [ros2_lf_binding.corr]: rcllf corr: stop drain waited 0 ms (bound 750 ms) for samples in flight; 0 writer(s) still owe one; 0 sample(s) taken by the drain
+[Bringup-1] [INFO] [1794929660.685542590] [ros2_lf_binding]: ros2_lf_take_stats: reason=shutdown mode=per-sub timeout_ms=per-sub sub_first_try=0 sub_skipped=0 sub_waited=0 wait_total_us=0 wait_max_us=0 wait_timeouts=0
+[Bringup-1] [INFO] [1794929660.685602090] [ros2_lf_binding]: ros2_lf_ingress_batch: path=thread calls=28 full=0 max=0 samples=0 timed=0 delay_mean_us=0.0 delay_max_us=0.0 keep_all_batch=16
+[Bringup-1] [INFO] [1794929660.685608090] [ros2_lf_binding]: ros2_lf_ingress_batch: path=worker calls=0 full=0 max=0 samples=0 timed=0 delay_mean_us=0.0 delay_max_us=0.0 keep_all_batch=16
+[Bringup-1] [INFO] [1794929660.685612860] [ros2_lf_binding]: ros2_lf_ingress_batch: path=publish calls=12 full=0 max=1 samples=12 timed=12 delay_mean_us=58.6 delay_max_us=97.1 keep_all_batch=16
+[Bringup-1] [INFO] [1794929660.685795400] [ros2_lf_binding.corr]: rcllf corr: {"event":"reconcile","epoch":6974704350200022850,"publications":96,"accepted":96,"failed":0,"admitted_origin":12,"refused_origin":0,"untracked":84,"refused":{},"edges":[{"edge":0,"delay_ns":0,"timeout_ns":100000000,"expectations":12,"outcomes":{"MATCHED":12},"samples_taken":12,"samples":{"retained":12},"epoch_close_ids":[],"orphan_dispatches":0,"missing_total":0,"missing":[],"missing_truncated":false,"pending_at_stop":0,"pending":[],"pending_truncated":false,"owed_at_close":0,"local_now":true,"cutoff":"none","local_undelivered":0,"local_undelivered_planted":0}],"stalls":0,"retained":0,"carrier":0,"identity_faults":0,"duplicate_tokens":0,"rejected_tokens":0,"missing_total":0,"reconciled":true}
+[Bringup-1] [INFO] [1794929660.685807420] [ros2_lf_binding.corr]: rcllf corr: untracked_by_topic {"/clock":12,"/lf_clock":13,"/parameter_events":25,"/rosout":34}
+[Bringup-1] [INFO] [1794929660.692169942] [ros2_lf_binding]: rcllf: rmw context finalized at shutdown
+[Bringup-1] WARNING: ---- There are 1 unprocessed future events on the event queue.
+[Bringup-1] WARNING: ---- The first future event has timestamp (6000000000, 0) after start tag.
+[Bringup-1] WARNING: ---- Cleared 1 unprocessed events from the event queue.
+[Bringup-1] ---- Elapsed logical time (in nsec): 5,500,000,000
+[Bringup-1] ---- Elapsed physical time (in nsec): 5,739,356,098
+[INFO] [Bringup-1]: process has finished cleanly [pid 11071]

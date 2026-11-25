@@ -1,0 +1,8 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# rcllf execution config for launch/opaque_callback.launch.py, read by colcon lf-generate.
+# These topics have no publisher inside this launch, so they are declared
+# external. Each message enters LF time at arrival.
+external_topics:
+  # fed by another launch, twin_sub.launch.py (twin_publisher_node)
+  - /twin

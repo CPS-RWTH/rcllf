@@ -1,0 +1,308 @@
+{
+  "name": "bringup",
+  "launch_graph": {
+    "root": {
+      "file_path": "/workspace/packages/src/pubsub_example/launch/bringup.launch.py",
+      "package": "pubsub_example",
+      "arguments": [],
+      "nodes": [],
+      "includes": [
+        {
+          "file_path": "/workspace/packages/src/pubsub_example/launch/publisher_node.launch.py",
+          "package": "pubsub_example",
+          "arguments": [],
+          "nodes": [
+            {
+              "package": "pubsub_example",
+              "executable": "publisher_node",
+              "name": "publisher_node",
+              "namespace": null,
+              "parameters": {},
+              "parameter_files": [],
+              "remappings": [],
+              "condition": null,
+              "condition_result": true,
+              "is_component": false,
+              "composable_container": null,
+              "environment": {},
+              "output": "screen",
+              "respawn": false,
+              "respawn_delay": null,
+              "arguments": []
+            }
+          ],
+          "includes": [],
+          "groups": [],
+          "errors": [],
+          "set_parameters": [],
+          "set_environment": [],
+          "set_configurations": [],
+          "execute_processes": []
+        },
+        {
+          "file_path": "/workspace/packages/src/pubsub_example/launch/subscriber_node.launch.py",
+          "package": "pubsub_example",
+          "arguments": [],
+          "nodes": [
+            {
+              "package": "pubsub_example",
+              "executable": "subscriber_node",
+              "name": "subscriber_node",
+              "namespace": null,
+              "parameters": {},
+              "parameter_files": [],
+              "remappings": [],
+              "condition": null,
+              "condition_result": true,
+              "is_component": false,
+              "composable_container": null,
+              "environment": {},
+              "output": "screen",
+              "respawn": false,
+              "respawn_delay": null,
+              "arguments": []
+            }
+          ],
+          "includes": [],
+          "groups": [],
+          "errors": [],
+          "set_parameters": [],
+          "set_environment": [],
+          "set_configurations": [],
+          "execute_processes": []
+        }
+      ],
+      "groups": [],
+      "errors": [],
+      "set_parameters": [],
+      "set_environment": [],
+      "set_configurations": [],
+      "execute_processes": []
+    },
+    "all_nodes": [
+      {
+        "package": "pubsub_example",
+        "executable": "publisher_node",
+        "name": "publisher_node",
+        "namespace": null,
+        "parameters": {},
+        "parameter_files": [],
+        "remappings": [],
+        "condition": null,
+        "condition_result": true,
+        "is_component": false,
+        "composable_container": null,
+        "environment": {},
+        "output": "screen",
+        "respawn": false,
+        "respawn_delay": null,
+        "arguments": []
+      },
+      {
+        "package": "pubsub_example",
+        "executable": "subscriber_node",
+        "name": "subscriber_node",
+        "namespace": null,
+        "parameters": {},
+        "parameter_files": [],
+        "remappings": [],
+        "condition": null,
+        "condition_result": true,
+        "is_component": false,
+        "composable_container": null,
+        "environment": {},
+        "output": "screen",
+        "respawn": false,
+        "respawn_delay": null,
+        "arguments": []
+      }
+    ],
+    "context": {
+      "parameters": {},
+      "environment": {},
+      "launch_configurations": {}
+    }
+  },
+  "nodes": {
+    "publisher_node": {
+      "name": "publisher",
+      "class_name": "PublisherNode",
+      "package": "pubsub_example",
+      "source_file": "/workspace/packages/src/pubsub_example/src/publisher_node.cpp",
+      "header_file": "/workspace/packages/src/pubsub_example/include/pubsub_example/publisher_node.hpp",
+      "base_class": "rclcpp::Node",
+      "is_component": false,
+      "callbacks": [
+        {
+          "name": "timer_callback",
+          "parameters": [],
+          "publishers_used": [
+            "sensor_data"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [],
+          "variables_written": [
+            "count_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": []
+        }
+      ],
+      "callback_groups": [
+        {
+          "name": "default_group",
+          "type": "MutuallyExclusive"
+        }
+      ],
+      "timers": [
+        {
+          "period_ms": 500.0,
+          "callback": "timer_callback",
+          "callback_group": "default_group",
+          "member_variable": "timer_",
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "offset_ms": 0.0
+        }
+      ],
+      "subscribers": [],
+      "service_servers": [],
+      "action_servers": [],
+      "publishers": [
+        {
+          "topic": "sensor_data",
+          "message_type": "custom_interfaces::msg::SensorData",
+          "qos_depth": 10,
+          "member_variable": "publisher_",
+          "is_lifecycle": false,
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "qos_reliability": "reliable",
+          "qos_durability": "volatile",
+          "qos_history": "keep_last",
+          "qos_deadline_ms": null,
+          "topic_dynamic": false
+        }
+      ],
+      "service_clients": [],
+      "action_clients": [],
+      "parameters": [],
+      "member_variables": [
+        "publisher_",
+        "timer_",
+        "count_"
+      ],
+      "lifecycle_callbacks": [],
+      "has_param_callback": false,
+      "param_callback": null,
+      "parse_warnings": [],
+      "detected_includes": []
+    },
+    "subscriber_node": {
+      "name": "subscriber",
+      "class_name": "SubscriberNode",
+      "package": "pubsub_example",
+      "source_file": "/workspace/packages/src/pubsub_example/src/subscriber_node.cpp",
+      "header_file": "/workspace/packages/src/pubsub_example/include/pubsub_example/subscriber_node.hpp",
+      "base_class": "rclcpp::Node",
+      "is_component": false,
+      "callbacks": [
+        {
+          "name": "topic_callback",
+          "parameters": [
+            {
+              "name": "msg",
+              "type": "const std::shared_ptr<custom_interfaces::msg::SensorData_<std::allocator<void>>>"
+            }
+          ],
+          "publishers_used": [],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [],
+          "variables_written": [],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": []
+        }
+      ],
+      "callback_groups": [
+        {
+          "name": "default_group",
+          "type": "MutuallyExclusive"
+        }
+      ],
+      "timers": [],
+      "subscribers": [
+        {
+          "topic": "sensor_data",
+          "message_type": "custom_interfaces::msg::SensorData",
+          "callback": "topic_callback",
+          "qos_depth": 10,
+          "callback_group": "default_group",
+          "member_variable": "subscription_",
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "qos_reliability": "reliable",
+          "qos_durability": "volatile",
+          "qos_history": "keep_last",
+          "qos_deadline_ms": null,
+          "topic_dynamic": false
+        }
+      ],
+      "service_servers": [],
+      "action_servers": [],
+      "publishers": [],
+      "service_clients": [],
+      "action_clients": [],
+      "parameters": [],
+      "member_variables": [
+        "subscription_"
+      ],
+      "lifecycle_callbacks": [],
+      "has_param_callback": false,
+      "param_callback": null,
+      "parse_warnings": [],
+      "detected_includes": []
+    }
+  },
+  "communication": {
+    "topics": [
+      {
+        "topic": "/sensor_data",
+        "message_type": "custom_interfaces::msg::SensorData",
+        "publishers": [
+          "publisher"
+        ],
+        "subscribers": [
+          "subscriber"
+        ],
+        "fields": [
+          {
+            "type": "std_msgs/Header",
+            "name": "header"
+          },
+          {
+            "type": "float64",
+            "name": "temperature"
+          },
+          {
+            "type": "float64",
+            "name": "humidity"
+          },
+          {
+            "type": "float64",
+            "name": "pressure"
+          }
+        ],
+        "after_delay_ns": null
+      }
+    ],
+    "services": [],
+    "actions": []
+  },
+  "parameter_files": {},
+  "schema_version": 3,
+  "diagnostics": []
+}

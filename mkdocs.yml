@@ -1,0 +1,116 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+
+site_name: rcllf
+site_url: https://cps-rwth.github.io/rcllf/
+site_description: Deterministic execution for ROS 2 systems via Lingua Franca
+repo_url: https://github.com/CPS-RWTH/rcllf
+repo_name: CPS-RWTH/rcllf
+site_dir: site
+
+# This is the user site, the one the release ships. Development-only pages (the
+# evaluation section and the nav2 case study) are excluded here, so a link to them from
+# a user page fails `mkdocs build --strict` in this repo too. The development site adds
+# them back: `mkdocs build --strict -f mkdocs.dev.yml`.
+exclude_docs: |
+  design/evaluation/
+  guides/nav2-case-study.md
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: blue
+      accent: light-blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      accent: light-blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Quickstart: getting-started/index.md
+    - Your First LF Run: getting-started/first-lf-run.md
+    - arm64 and NVIDIA Jetson: getting-started/arm64-jetson.md
+  - Guides:
+    - Porting Your ROS2 System: guides/porting-guide.md
+    - Bring Your Own ROS2 Code: guides/bring-your-own-code.md
+  - Examples:
+    - Overview: examples/index.md
+    - timer_example: examples/timer-example.md
+    - pubsub_example: examples/pubsub-example.md
+    - service_example: examples/service-example.md
+    - action_example: examples/action-example.md
+    - component_example: examples/component-example.md
+    - lifecycle_example: examples/lifecycle-example.md
+    - parameter_example: examples/parameter-example.md
+    - callback_group_example: examples/callback-group-example.md
+    - fusion_example: examples/fusion-example.md
+    - brake_fusion: examples/brake-fusion.md
+    - system_bringup: examples/system-bringup.md
+  - Features:
+    - Overview: features/index.md
+    - Support Matrix: features/support-matrix.md
+    - Soundness Checker: features/soundness.md
+    - Federation (Multi-Process): features/federation.md
+    - Execution Configuration: features/execution-config.md
+    - Fast Mode: features/fast-mode.md
+    - Missing Messages: features/missing-messages.md
+    - Plants: features/plants.md
+    - message_filters Synchronizers: features/message-filters.md
+    - BNA Synchronizer: features/bna-synchronizer.md
+    - tf2 Lookups: features/tf2.md
+    - Visualizations: features/visualizations.md
+    - Tracing: features/tracing.md
+  - Reference:
+    - CLI Reference: reference/cli.md
+    - ros2_lf_binding API: reference/ros2-lf-binding.md
+    - Data Model: reference/data-model.md
+    - Resolved Configuration Model: reference/resolved-model.md
+    - Semantic Trace Schema: reference/trace-schema.md
+    - Code Structure: reference/code-structure.md
+    - Docker Reference: reference/docker.md
+    - Troubleshooting: reference/troubleshooting.md
+  - Design:
+    - Design Principles: design/design-principles.md
+    - Architecture: design/architecture.md
+    - Time & Coordination Model: design/time-and-coordination.md
+    - LF Code Generation: design/lf-generation.md
+    - Extraction: design/extraction.md
+    - Callback Groups: design/callback-groups.md
+    - Glossary: design/glossary.md
+    - Architecture Decision Records:
+      - ADR 0001 — LF Is the Sole Time Authority: design/adr/0001-lf-owns-time.md
+      - ADR 0002 — RID Assignment and Stability: design/adr/0002-rid-assignment.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - tables
+  - toc:
+      permalink: true

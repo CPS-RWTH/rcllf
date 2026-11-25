@@ -1,0 +1,23 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# rcllf execution config for launch/13_group_action_features.launch.py, read by colcon lf-generate.
+# These topics have no publisher inside this launch, so they are declared
+# external. Each message enters LF time at arrival.
+external_topics:
+  # fed by 'ros2 topic pub' (no node in the repo publishes it)
+  - /feature_input
+  # fed by 'ros2 topic pub' (no node in the repo publishes it)
+  - /unscoped_ns/feature_input
+# Each timer period comes from the timer_period_ms parameter, which the analyzer
+# cannot read (RCLLF-R001), so it is set here to the period the node runs with.
+nodes:
+  # 500 ms: the timer_period_ms default, src/feature_node.cpp:30
+  group_node_a:
+    timers:
+      timer_callback:
+        period: 500 msec
+  # 500 ms: the timer_period_ms default, src/feature_node.cpp:30
+  '/unscoped_ns/group_node_b':
+    timers:
+      timer_callback:
+        period: 500 msec

@@ -1,0 +1,51 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+#
+# Per-connection after-delays for sentry_pipeline.
+#   colcon lf-generate --package sentry_pipeline --force \
+#     --exec-config src/fixtures/sentry_pipeline/config/execution.yaml
+#
+# Rule: a link's delay is the longest measured execution time of its sending
+# callback, rounded up to the next 100 usec, so a sample becomes visible in
+# logical time no earlier than its sender can have finished computing it.
+# Measured in one 30 s run (default scenario, lfc variant, every link 1 msec):
+# dispatch_end - dispatch_begin of each node's dispatches, max over the run.
+schema_version: 1
+defaults:
+  # One publish per invocation is declared, so every edge is admitted and the
+  # delay is the correspondence delay d of the edge.
+  max_publishes_per_invocation: 1
+connections:
+  /sentry/imu:
+    after_delay: "400 usec"
+    reason: measured
+    source: "measured, imu_node timer callback max 315 us"
+  /sentry/scan:
+    after_delay: "600 usec"
+    reason: measured
+    source: "measured, lidar_node timer callback max 572 us"
+  /sentry/image:
+    after_delay: "400 usec"
+    reason: measured
+    source: "measured, camera_node timer callback max 390 us"
+  /sentry/state:
+    after_delay: "800 usec"
+    reason: measured
+    source: "measured, fusion_node imu/scan callbacks max 701 us"
+  /sentry/detections:
+    after_delay: "8200 usec"
+    reason: measured
+    source: "measured, detector_node image callback max 8113 us"
+    links:
+      "detector_node -> diagnostics_sink_node":
+        after_delay: "20 msec"
+        reason: budgeted
+        source: "diagnostics are logged, not acted on; half the 40 ms camera period"
+  /sentry/plan:
+    after_delay: "1100 usec"
+    reason: measured
+    source: "measured, planner_node dispatches max 1069 us (timer callback, including subscriptions)"
+  /sentry/cmd:
+    after_delay: "400 usec"
+    reason: measured
+    source: "measured, controller_node plan callback max 376 us"

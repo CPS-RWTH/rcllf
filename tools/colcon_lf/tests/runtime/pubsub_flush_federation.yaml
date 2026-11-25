@@ -1,0 +1,30 @@
+# Copyright 2026 rcllf Contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# Fixture (test_runtime_xfed_flush_complete.py): pubsub_example in
+# one federate per node under decentralized coordination with `after 5ms`, so
+# the sensor_data record link uses the flush sender (one message per
+# time at t + 1 ns over `after d - 1 ns`). The stp_offset is generous so a
+# healthy run has no tardy message; the test drops one flushed message with
+# RCLLF_TEST_XCORR_DROP_COMPLETE and expects CONTROL_FAILURE.
+#
+# Usage (from packages/):
+#   FEDERATE=../tools/colcon_lf/tests/runtime/pubsub_flush_federation.yaml \
+#     bash ../docker/lf_build.sh pubsub_example
+
+system: pubsub_example_bringup
+coordination: decentralized
+
+federates:
+  publisher_node:
+    nodes:
+      - publisher_node
+  subscriber_node:
+    nodes:
+      - subscriber_node
+
+after_overrides:
+  - from: publisher_node.sensor_data
+    to:   subscriber_node.sensor_data
+    after: 5ms
+    stp_offset: 50ms

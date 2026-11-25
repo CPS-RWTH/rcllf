@@ -1,0 +1,24 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# N1: one burst of 5 rows on input 0 above the declared bound 4.
+# Hand derivation against message_filters 4.11.17 sync_policies/exact_time.h:
+# add() 111-123 (tuples_[stamp], slot overwritten: last wins), checkTuple()
+# 157-196 (full -> signal, erase, clearOldTuples(); then while size > q drop
+# tuples_.begin(), the smallest stamp), clearOldTuples() 199-219 (drop every
+# stamp <= last signal, ascending).
+# Arrival order = lf_arrival_order, sort by (tick, input, publish order)
+# (one drain firing per input and tag). Rows r<n> are 0-based in file order, stamps in ms.
+#   out of the domain by construction: the converted run must report
+#   out_of_domain (PUSH_OVERFLOW or the reconcile's burst_exceeded), never
+#   compatible. No expect block.
+name: N1
+policy: exact
+queue: 3
+rows:
+  - {tick: 0, input: 0, stamp_ms: 10, payload: 1}  # r0
+  - {tick: 0, input: 0, stamp_ms: 20, payload: 2}  # r1
+  - {tick: 0, input: 0, stamp_ms: 30, payload: 3}  # r2
+  - {tick: 0, input: 0, stamp_ms: 40, payload: 4}  # r3
+  - {tick: 0, input: 0, stamp_ms: 50, payload: 5}  # r4
+  - {tick: 0, input: 1, stamp_ms: 10, payload: 9}  # r5
+expect: []

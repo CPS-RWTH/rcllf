@@ -1,0 +1,80 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+
+name: Bug Report
+description: Report a bug or unexpected behavior
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! Please fill out the details below.
+
+        This repository is release-only (see CONTRIBUTING.md): a fix lands in the next
+        release. Issue numbers here are this repository's own.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Clear description of what went wrong
+      placeholder: "Describe the bug..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction Steps
+      description: How to reproduce the issue, including the docker compose or host command you used
+      placeholder: |
+        1. Run: `docker compose run --rm dev` (or the host steps)
+        2. Execute: ...
+        3. Observe: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs Actual
+      description: What did you expect to happen vs what actually happened?
+      placeholder: |
+        Expected: ...
+        Actual: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: rcllf release, ROS 2 distro, how you ran the code (docker or host), OS
+      placeholder: |
+        - rcllf release: v0.1.0
+        - ROS 2 Distro: Jazzy
+        - Method: Docker Compose
+        - OS: Ubuntu 24.04
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or Error Output
+      description: Relevant error messages or logs (use code blocks)
+      placeholder: |
+        ```
+        Paste logs here
+        ```
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched for existing issues with the same problem
+          required: false
+        - label: I have reproduced the issue locally
+          required: false

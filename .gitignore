@@ -1,0 +1,54 @@
+
+# ROS2 colcon build artifacts
+packages/build/
+packages/install/
+packages/log/
+packages/lf-analysis/
+packages/lf-generated/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+*.egg
+
+# MkDocs output
+site/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.venv/
+
+# Output directory (experiments, traces, bags, build logs)
+output/experiments/
+output/colcon-build/
+!output/README.md
+
+
+# Core dumps
+core
+
+# Stray output dirs from running tools at the repo root (lfc creates fed-gen/
+# relative to its cwd; colcon creates log/ wherever it's invoked).
+/fed-gen/
+/log/
+
+
+
+# Root-level colcon artifacts (workspace root is packages/ — these are accidents)
+/build/
+/install/
+/log/

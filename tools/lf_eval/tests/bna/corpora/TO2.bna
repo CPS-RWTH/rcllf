@@ -1,0 +1,20 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# Expectations below were derived by hand.
+# TO2 just after the deadline: completing samples admitted at (148, 1) and at 179,
+# one tag after a deadline, cannot resurrect their anchors.
+params epoch=1 delta=10 lateness=0,0 capacity=8,8 retention=1000 timeout=47
+admit 0 100 1:a:1 @101
+admit 1 105 1:b:1 @106
+admit 0 130 1:a:2 @131
+wake @148
+admit 1 115 1:b:2 @148+1
+admit 1 135 1:b:3 @179
+admit 0 160 1:a:3 @181
+close shutdown @200
+expect D 1:a:1 REJECTED(timeout) @148
+expect S 1:b:1 SUPERSEDED @148
+expect S 1:b:2 SUPERSEDED @148+1
+expect D 1:a:2 REJECTED(timeout) @178
+expect S 1:b:3 SUPERSEDED @181
+expect D 1:a:3 REJECTED(shutdown) @200

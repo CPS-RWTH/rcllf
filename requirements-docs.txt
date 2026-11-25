@@ -1,0 +1,4 @@
+# Docs toolchain — single source of truth shared by docker/Dockerfile and the
+# CI docs job (.github/workflows/ci.yml).
+# mkdocs itself comes in as a dependency of mkdocs-material.
+mkdocs-material==9.7.6

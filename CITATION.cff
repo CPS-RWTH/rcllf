@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "rcllf"
+version: "0.1.0"
+date-released: 2026-11-25
+type: software
+authors:
+  - family-names: Teper
+    given-names: Harun
+    email: harun.teper@cps.rwth-aachen.de
+    affiliation: "RWTH Aachen University"
+license: Apache-2.0
+repository-code: "https://github.com/CPS-RWTH/rcllf"
+preferred-citation:
+  type: article
+  authors:
+    - family-names: Teper
+      given-names: Harun
+    - family-names: Lin
+      given-names: Shaokai
+    - family-names: Li
+      given-names: Shulu
+    - family-names: Lee
+      given-names: Edward A.
+    - family-names: Chen
+      given-names: Jian-Jia
+  title: "Deterministic Execution of ROS 2 Applications via Lingua Franca"
+  year: 2026
+  doi: "10.48550/arXiv.2606.09203"
+  url: "https://arxiv.org/abs/2606.09203"
+  identifiers:
+    - type: other
+      value: "arXiv:2606.09203"
+  # Venue intentionally omitted while the paper is under review; add it once published.

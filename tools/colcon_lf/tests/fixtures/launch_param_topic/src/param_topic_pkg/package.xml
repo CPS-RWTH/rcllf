@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!-- Test fixture for a hierarchical topic set at run time: a node whose
+     publisher topic comes from a launch parameter with no C++ default. Copied
+     into a tmp workspace by tests/test_launch_param_topic.py, never built. -->
+<package format="3">
+  <name>param_topic_pkg</name>
+  <version>0.1.0</version>
+  <description>Fixture: publisher topic set by a launch parameter.</description>
+  <maintainer email="noreply@example.com">rcllf Contributors</maintainer>
+  <license>Apache-2.0</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

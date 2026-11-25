@@ -1,0 +1,320 @@
+From: rcllf local patch
+Subject: [PATCH] RTI and federate: stop a federate whose upstream left without resigning
+
+When a federate leaves the federation with an error, its downstream federates
+are never told. Under decentralized coordination the closed peer socket only
+marks the departed peer's inputs absent until FOREVER (mark_inputs_known_absent),
+so the downstream federate runs to its timeout with no input, logs nothing and
+exits 0 (one federate exited 3 after 4 ms, the other ran its 30 s and
+exited 0). Under centralized coordination the RTI only released the held TAGs
+for a MSG_TYPE_FAILED, not for a federate whose connection simply closed.
+
+How a departure with an error looks at the RTI: a clean end always sends
+MSG_TYPE_RESIGN after the federation's stop. An exit() after an error sends
+MSG_TYPE_FAILED (lf_terminate_execution with _lf_normal_termination false).
+An _Exit() (the rcllf binding's fatal path, exit 3) or a crash sends nothing:
+the RTI's read of that federate's connection fails.
+
+RTI (rti_remote.c): on MSG_TYPE_FAILED, and on a connection that closes without
+MSG_TYPE_RESIGN, the RTI sends the new MSG_TYPE_RCLLF_UPSTREAM_FAILED (200,
+followed by the 16-bit ID of the federate that left and a one-byte direct
+flag) to every other started federate (state GRANTED): direct = 1 when the
+departed federate's neighbor structure lists it as an immediate downstream,
+direct = 0 otherwise. The list alone is not enough. A decentralized federation
+sends no neighbor structure (the generated lf_send_neighbor_structure_to_RTI
+sends 0 upstreams and 0 downstreams), and the neighbor structure leaves
+physical connections out, so under centralized coordination a federate fed
+only through a physical connection (a P2P socket under any coordination) is
+not listed. An earlier version of this patch told only the listed federates
+when the list was not empty; such a federate then stopped only through a
+notified sibling's stop request, logged nothing and exited 0
+(a mixed physical-connection run with one federate killed). A closed connection is now handled like
+MSG_TYPE_FAILED: the RTI marks its own exit as an error, sets the federate's
+next event to FOREVER and releases the TAGs it held back.
+
+Federate (federate.c): each federate records which federates opened an
+inbound peer connection to it (at accept time; the record outlives the
+connection, which a crashed peer closes before the RTI's notice arrives;
+accessed atomically, since the accept thread writes it and the RTI listener
+thread reads it). A notice cannot overtake that record: a sender's
+lf_connect_to_federate returns only after the receiver recorded it and sent
+the ACK, the sender sends its start timestamp after that, and the RTI starts,
+and so notifies, no federate before every timestamp has arrived. On
+MSG_TYPE_RCLLF_UPSTREAM_FAILED with direct = 1, or with direct = 0 from a
+recorded inbound peer, it logs an error naming the federate, calls the weak
+hook rcllf_upstream_failed_hook(fed_id) when the program defines it (the rcllf
+binding does, and exits 3 at the end), and calls lf_request_stop(), so the
+federation stops at a coordinated tag instead of running on. Any other notice
+is logged as information and ignored. The federate records which federate's
+departure stopped it, and lf_reactor_c_main (reactor_threaded.c) then returns
+1 instead of 0 with an error line, so a plain LF federate without the hook
+does not exit 0 either (it used to). Its termination is still normal: it
+resigns. The rcllf binding's atexit shutdown ends the process with 3 after
+main returned.
+
+A federate stopped by this notice ends normally and resigns, so its own
+downstream federates get no notice of their own; the stop request it sends
+stops the whole federation at one tag instead.
+
+The patch carries its own marker in both files: federated
+programs compile federate.c, the RTI compiles rti_remote.c.
+
+Upstream reactor-c has no such notice (checked against the pinned 2f63540d).
+
+Rcllf-Marker-For: 0009-rti-federate-upstream-failed-notice
+Rcllf-Marker-Scope: federated
+---
+--- a/core/federated/RTI/rti_remote.c
++++ b/core/federated/RTI/rti_remote.c
+@@ -894,6 +894,54 @@
+ }
+ 
+ /**
++ * rcllf: tell the started federates that `failed` left without
++ * resigning. Without this a downstream federate runs on with the inputs from
++ * `failed` absent and records nothing. Every other started federate gets the
++ * notice: direct = 1 when the neighbor structure lists it as an immediate
++ * downstream of `failed`, direct = 0 otherwise, and a direct = 0 receiver
++ * decides by its own inbound peer connections. Not only the listed ones: the
++ * neighbor structure leaves physical connections out (and decentralized
++ * federations send none), so a federate fed by `failed` only through a
++ * physical connection is not in the list.
++ * The caller holds rti_mutex. A failed write is only logged.
++ * @param failed The federate that left.
++ */
++static void notify_downstream_of_failure(federate_info_t* failed) {
++  {
++    // rcllf patch marker: the benchmark harness reads it back from the running program.
++    static const char rcllf_marker[] __attribute__((section("rcllf_reactor_c_patches"), used, unused)) =
++        "rcllf-reactor-c-patch:0009-rti-federate-upstream-failed-notice";
++  }
++  {
++    // rcllf patch marker: the benchmark harness reads it back from the running program.
++    static const char rcllf_marker[] __attribute__((section("rcllf_reactor_c_patches"), used, unused)) =
++        "rcllf-reactor-c-patch:0009-rti-federate-upstream-failed-notice";
++  }
++  unsigned char buffer[MSG_TYPE_RCLLF_UPSTREAM_FAILED_LENGTH];
++  buffer[0] = MSG_TYPE_RCLLF_UPSTREAM_FAILED;
++  encode_uint16((uint16_t)failed->enclave.id, &buffer[1]);
++  for (int i = 0; i < rti_remote->base.number_of_scheduling_nodes; i++) {
++    federate_info_t* d = GET_FED_INFO(i);
++    if (d == failed || d->enclave.state != GRANTED || d->net == NULL) {
++      continue;
++    }
++    bool direct = false;
++    for (int j = 0; j < failed->enclave.num_immediate_downstreams; j++) {
++      if (failed->enclave.immediate_downstreams[j] == i) {
++        direct = true;
++        break;
++      }
++    }
++    buffer[3] = direct ? 1 : 0;
++    lf_print_error("RTI: Federate %d left without resigning. Telling %s federate %d.", failed->enclave.id,
++                   direct ? "downstream" : "started", d->enclave.id);
++    if (write_to_net(d->net, MSG_TYPE_RCLLF_UPSTREAM_FAILED_LENGTH, buffer)) {
++      lf_print_warning("RTI: Failed to tell federate %d that federate %d left.", d->enclave.id, failed->enclave.id);
++    }
++  }
++}
++
++/**
+  * Handle MSG_TYPE_FAILED sent by a federate. This message is sent by a federate
+  * that is exiting in failure.  In this case, the RTI will
+  * also terminate abnormally, returning a non-zero exit code when it exits.
+@@ -914,6 +962,7 @@
+   _lf_federate_reports_error = true;
+   lf_print_error("RTI: Federate %d reports an error and has exited.", my_fed->enclave.id);
+ 
++  notify_downstream_of_failure(my_fed);
+   my_fed->enclave.state = NOT_CONNECTED;
+ 
+   // Indicate that there will no further events from this federate.
+@@ -988,7 +1037,19 @@
+     if (read_failed) {
+       // network abstraction is closed
+       lf_print_info("RTI: Connection to federate %d is closed. Exiting the thread.", my_fed->enclave.id);
++      // rcllf: the connection closed without MSG_TYPE_RESIGN (an
++      // _Exit or a crash): handle it as MSG_TYPE_FAILED. Mark the error, tell the
++      // started federates downstream of it, and release the TAGs it held back.
++      LF_MUTEX_LOCK(&rti_mutex);
++      _lf_federate_reports_error = true;
++      lf_print_error("RTI: Federate %d closed its connection without resigning.", my_fed->enclave.id);
++      notify_downstream_of_failure(my_fed);
+       my_fed->enclave.state = NOT_CONNECTED;
++      my_fed->enclave.next_event = FOREVER_TAG;
++      bool* visited = (bool*)calloc(rti_remote->base.number_of_scheduling_nodes, sizeof(bool));
++      notify_downstream_advance_grant_if_safe(&(my_fed->enclave), visited);
++      free(visited);
++      LF_MUTEX_UNLOCK(&rti_mutex);
+       // Nothing more to do. Close the network abstraction and exit.
+       // Prevent multiple threads from closing the same network abstraction at the same time.
+       shutdown_net(my_fed->net, false);
+--- a/core/federated/federate.c
++++ b/core/federated/federate.c
+@@ -1538,6 +1538,90 @@
+ static void handle_rti_failed_message(void) { exit(1); }
+ 
+ /**
++ * rcllf: the program may define this hook (the rcllf ROS 2 binding
++ * does) to record that an upstream federate left and to fail its own exit.
++ */
++extern void rcllf_upstream_failed_hook(int fed_id) __attribute__((weak));
++
++/**
++ * rcllf: the federates that opened an inbound peer connection to
++ * this one, recorded at accept time. Unlike net_for_inbound_p2p_connections it
++ * is not cleared when the connection closes, because a crashed peer's
++ * connection usually closes before the RTI's notice arrives. Written by the
++ * P2P accept thread and read by the RTI listener thread, so both sides use
++ * atomic accesses. A notice cannot overtake the record: the sender's
++ * lf_connect_to_federate returns only after this federate recorded it and sent
++ * the ACK, the sender sends its start timestamp after that, and the RTI starts
++ * (and so notifies) no federate before every timestamp has arrived.
++ */
++static bool rcllf_inbound_peer[NUMBER_OF_FEDERATES];
++
++/**
++ * rcllf: the federate whose departure stopped this
++ * one, -1 while none did. Written by the RTI listener thread, read by the main
++ * thread when lf_reactor_c_main returns.
++ */
++static int rcllf_stopped_by_federate = -1;
++
++/**
++ * rcllf: the exit code lf_reactor_c_main returns for
++ * a run that ended normally: 1 when an upstream-failed notice stopped this
++ * federate, 0 otherwise. Without it a plain LF federate stopped by the notice
++ * exited 0, so its upstream's failure read as a clean run. The federate still
++ * resigns (the termination is normal), so its own downstream federates get no
++ * notice; a program that defines rcllf_upstream_failed_hook (the rcllf
++ * binding) may end the process with its own code later (exit 3).
++ * @return 1 or 0.
++ */
++int rcllf_upstream_failed_exit_code(void) {
++  int fed_id = __atomic_load_n(&rcllf_stopped_by_federate, __ATOMIC_ACQUIRE);
++  if (fed_id < 0) {
++    return 0;
++  }
++  lf_print_error("Exiting with code 1: federate %d, which sends to this federate, left the federation without "
++                 "resigning.",
++                 fed_id);
++  return 1;
++}
++
++/**
++ * rcllf: handle MSG_TYPE_RCLLF_UPSTREAM_FAILED from the RTI. A
++ * federate left without resigning. When it sends to this one (the RTI says so,
++ * or it opened an inbound peer connection here), its inputs here stay absent
++ * from now on: log it, call the program's hook and request a stop instead of
++ * running on silently. Otherwise log it and run on.
++ */
++static void handle_upstream_failed_message(void) {
++  {
++    // rcllf patch marker: the benchmark harness reads it back from the running program.
++    static const char rcllf_marker[] __attribute__((section("rcllf_reactor_c_patches"), used, unused)) =
++        "rcllf-reactor-c-patch:0009-rti-federate-upstream-failed-notice";
++  }
++  unsigned char buffer[MSG_TYPE_RCLLF_UPSTREAM_FAILED_LENGTH - 1];
++  read_from_net_fail_on_error(_fed.net_to_RTI, MSG_TYPE_RCLLF_UPSTREAM_FAILED_LENGTH - 1, buffer,
++                              "Failed to read an upstream-failed message from the RTI.");
++  int fed_id = (int)extract_uint16(buffer);
++  bool upstream = buffer[2] != 0 || (fed_id >= 0 && fed_id < NUMBER_OF_FEDERATES &&
++                                      __atomic_load_n(&rcllf_inbound_peer[fed_id], __ATOMIC_ACQUIRE));
++  if (!upstream) {
++    lf_print("Federate %d left the federation without resigning. It does not send to this federate; running on "
++             "(rcllf).",
++             fed_id);
++    return;
++  }
++  lf_print_error("Federate %d, which sends to this federate, left the federation without resigning (an error exit "
++                 "or a crash). Stopping this federate.",
++                 fed_id);
++  int none = -1;
++  __atomic_compare_exchange_n(&rcllf_stopped_by_federate, &none, fed_id, false, __ATOMIC_ACQ_REL,
++                              __ATOMIC_ACQUIRE); // rcllf
++  if (rcllf_upstream_failed_hook != NULL) {
++    rcllf_upstream_failed_hook(fed_id);
++  }
++  lf_request_stop();
++}
++
++/**
+  * Thread that listens for network abstraction inputs from the RTI.
+  * When messages arrive, this calls the appropriate handler.
+  * @param args Ignored
+@@ -1603,6 +1687,9 @@
+     case MSG_TYPE_FAILED:
+       handle_rti_failed_message();
+       break;
++    case MSG_TYPE_RCLLF_UPSTREAM_FAILED:
++      handle_upstream_failed_message();
++      break;
+     case MSG_TYPE_CLOCK_SYNC_T1:
+     case MSG_TYPE_CLOCK_SYNC_T4:
+       lf_print_error("Federate %d received unexpected clock sync message from RTI.", _lf_my_fed_id);
+@@ -2117,6 +2204,9 @@
+     // Otherwise, there can be race condition where, during termination,
+     // two threads attempt to simultaneously close the network abstraction.
+     _fed.net_for_inbound_p2p_connections[remote_fed_id] = net;
++    if (remote_fed_id < NUMBER_OF_FEDERATES) {
++      __atomic_store_n(&rcllf_inbound_peer[remote_fed_id], true, __ATOMIC_RELEASE); // rcllf
++    }
+ 
+     // Send an MSG_TYPE_ACK message.
+     unsigned char response = MSG_TYPE_ACK;
+--- a/core/threaded/reactor_threaded.c
++++ b/core/threaded/reactor_threaded.c
+@@ -1128,6 +1128,13 @@
+   if (ret == 0) {
+     LF_PRINT_LOG("---- All environment worker threads exited successfully.");
+   }
++#ifdef FEDERATED
++  // rcllf: a federate stopped because an upstream
++  // federate left without resigning returns 1, not 0 (federate.c).
++  if (ret == 0) {
++    ret = rcllf_upstream_failed_exit_code();
++  }
++#endif
+   _lf_normal_termination = true;
+   return ret;
+ }
+--- a/include/core/federated/federate.h
++++ b/include/core/federated/federate.h
+@@ -597,4 +597,11 @@
+ instant_t lf_wait_until_time(tag_t tag);
+ #endif // FEDERATED_DECENTRALIZED
+ 
++/**
++ * @brief rcllf: the exit code of a federate whose run
++ * ended normally: 1 when the RTI's upstream-failed notice stopped it, else 0.
++ * @ingroup Federated
++ */
++int rcllf_upstream_failed_exit_code(void);
++
+ #endif // FEDERATE_H
+--- a/network/api/net_common.h
++++ b/network/api/net_common.h
+@@ -736,6 +736,23 @@
+  */
+ #define MSG_TYPE_DOWNSTREAM_NEXT_EVENT_TAG 26
+ 
++/**
++ * @brief rcllf: byte identifying that a federate left the
++ * federation without resigning.
++ * @ingroup Network
++ *
++ * Sent by the RTI when a federate sends MSG_TYPE_FAILED or its connection to
++ * the RTI closes without a MSG_TYPE_RESIGN. The next two bytes are the ID of
++ * the federate that left; the byte after them is 1 when the receiver is one of
++ * its immediate downstream federates by the neighbor structure, 0 when it is
++ * not listed there. Every started federate gets the notice: the
++ * neighbor structure leaves physical connections out, and a decentralized
++ * federation sends none. A receiver of a 0 notice decides by its own inbound
++ * peer connections.
++ */
++#define MSG_TYPE_RCLLF_UPSTREAM_FAILED 200
++#define MSG_TYPE_RCLLF_UPSTREAM_FAILED_LENGTH 4
++
+ /////////////////////////////////////////////
+ //// Rejection codes
+ 

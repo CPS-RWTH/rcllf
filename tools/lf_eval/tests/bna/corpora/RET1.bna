@@ -1,0 +1,11 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# Expectations below were derived by hand.
+# RET1 retention: the candidate expires at (101 + 50, 0) and its window anchor goes with it.
+params epoch=1 delta=10 lateness=0,0 capacity=8,8 retention=50 timeout=500
+admit 1 100 1:b:1 @101
+admit 0 105 1:a:1 @106
+wake @151
+close shutdown @200
+expect S 1:b:1 EXPIRED @151
+expect D 1:a:1 REJECTED(candidate_expired) @151

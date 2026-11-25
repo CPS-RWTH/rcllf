@@ -1,0 +1,6 @@
+{"ev":"config","domain":"mf-sync/1","policy":"exact","queue":1,"message_filters":"4.11.17-1noble.20260912.163757","rclcpp":"28.1.22-1noble.20260911.105434","corpus":"fnv1a64:a112c16ee4d987e9","impl":"header"}
+{"ev":"signal","seq":0,"stamp_ns":10000000,"slots":[{"input":0,"row":0,"payload":0},{"input":1,"row":1,"payload":1}]}
+{"ev":"signal","seq":1,"stamp_ns":20000000,"slots":[{"input":0,"row":2,"payload":100},{"input":1,"row":3,"payload":101}]}
+{"ev":"signal","seq":2,"stamp_ns":30000000,"slots":[{"input":0,"row":4,"payload":200},{"input":1,"row":5,"payload":201}]}
+{"ev":"signal","seq":3,"stamp_ns":40000000,"slots":[{"input":0,"row":6,"payload":300},{"input":1,"row":7,"payload":301}]}
+{"ev":"signal","seq":4,"stamp_ns":50000000,"slots":[{"input":0,"row":8,"payload":400},{"input":1,"row":9,"payload":401}]}

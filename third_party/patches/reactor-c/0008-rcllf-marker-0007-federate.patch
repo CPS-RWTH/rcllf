@@ -1,0 +1,37 @@
+From: rcllf <noreply@rcllf.invalid>
+Subject: [PATCH] rcllf marker for 0007-federate-dnet-handler-env-mutex
+
+Puts the string "rcllf-reactor-c-patch:0007-federate-dnet-handler-env-mutex"
+into section rcllf_reactor_c_patches of every program that compiles this file.
+A tool can read the section back from the running program to check that
+a configured patch is present.
+
+The hunk removes and re-adds a line that only the fix has, so it applies only on
+top of the fix. The marker sits outside the fix hunks' context, so the fix patch
+still reads "previously applied" on a tree that has both. federate.c is compiled
+into federated programs only.
+
+Rcllf-Marker-For: 0007-federate-dnet-handler-env-mutex
+Rcllf-Marker-Scope: federated
+---
+--- a/core/federated/federate.c
++++ b/core/federated/federate.c
+@@ -1472,10 +1472,17 @@
+  * the main thread had already replaced by a newer one (or by NEVER), the RTI
+  * recorded the federate's next event in its past, and the federation stalled
+- * (brake_fusion fed1host under CPU stress).
++ * (brake_fusion fed1host under CPU stress).
+  */
+ static void handle_downstream_next_event_tag() {
+   size_t bytes_to_read = sizeof(instant_t) + sizeof(microstep_t);
+   unsigned char buffer[bytes_to_read];
++  {
++    // rcllf patch marker: the benchmark harness reads it back from the running
++    // program. The hunk also rewrites a line of the fix, so it applies only on top of it.
++    static const char rcllf_marker[]
++        __attribute__((section("rcllf_reactor_c_patches"), used, unused)) =
++        "rcllf-reactor-c-patch:0007-federate-dnet-handler-env-mutex";
++  }
+   read_from_net_fail_on_error(_fed.net_to_RTI, bytes_to_read, buffer,
+                               "Failed to read downstream next event tag from RTI.");
+   tag_t DNET = extract_tag(buffer);

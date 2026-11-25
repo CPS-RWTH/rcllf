@@ -1,0 +1,10 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# Expectations below were derived by hand.
+# EP1 epoch close.
+params epoch=1 delta=10 lateness=0,0 capacity=8,8 retention=1000 timeout=500
+admit 0 100 1:a:1 @101
+admit 1 105 1:b:1 @110
+close epoch @120
+expect D 1:a:1 REJECTED(epoch) @120
+expect S 1:b:1 FLUSHED @120

@@ -1,0 +1,4 @@
+{"ev":"config","domain":"mf-sync/1","policy":"exact","queue":1,"message_filters":"4.11.17-1noble.20260912.163757","rclcpp":"28.1.22-1noble.20260911.105434","corpus":"fnv1a64:cbc8a0ca90b85284","impl":"ref"}
+{"ev":"drop","seq":0,"stamp_ns":1000000,"slots":[{"input":0,"row":1,"payload":2},null]}
+{"ev":"drop","seq":1,"stamp_ns":1000000,"slots":[null,{"input":1,"row":2,"payload":3}]}
+{"ev":"signal","seq":2,"stamp_ns":2000000,"slots":[{"input":0,"row":0,"payload":1},{"input":1,"row":3,"payload":4}]}

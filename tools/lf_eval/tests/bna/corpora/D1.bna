@@ -1,0 +1,27 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# Expectations below were derived by hand.
+# D1 identity faults: duplicate and out-of-order ordinals per writer, another epoch,
+# a negative stamp (whose ordinal still counts).
+params epoch=1 delta=10 lateness=0,50 capacity=8,8 retention=1000 timeout=500
+admit 1 100 1:b:5 @101
+admit 1 101 1:b:5 @102
+admit 1 102 1:b:4 @103
+admit 1 103 1:c:1 @104
+admit 0 100 1:a:1 @105
+admit 0 100 1:a:1 @106
+admit 1 104 2:b:6 @107
+admit 1 104 1:b:6 @108
+admit 1 -5 1:c:2 @109
+admit 1 106 1:c:2 @110
+close shutdown @200
+expect S 1:b:5 FAULT(duplicate) @102
+expect S 1:b:4 FAULT(order) @103
+expect D 1:a:1 REJECTED(duplicate) @106
+expect S 2:b:6 FAULT(identity) @107
+expect S 1:c:2 FAULT(stamp) @109
+expect S 1:c:2 FAULT(duplicate) @110
+expect D 1:a:1 REJECTED(shutdown) @200
+expect S 1:b:5 FLUSHED @200
+expect S 1:c:1 FLUSHED @200
+expect S 1:b:6 FLUSHED @200

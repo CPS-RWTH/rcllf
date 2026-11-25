@@ -1,0 +1,276 @@
+{
+  "edges": [
+    {
+      "delay_ns": 1000000,
+      "id": 0,
+      "publisher": {
+        "callbacks": [
+          "plan_callback"
+        ],
+        "key": "ControllerNode",
+        "node": "controller_node",
+        "rids": [
+          9
+        ]
+      },
+      "status": "admitted",
+      "subscriber": {
+        "callback": "cmd_callback",
+        "key": "ActuatorSinkNode",
+        "node": "actuator_sink_node",
+        "rid": 10
+      },
+      "topic": "/sentry/cmd"
+    },
+    {
+      "delay_ns": 1000000,
+      "id": 1,
+      "publisher": {
+        "callbacks": [
+          "image_callback"
+        ],
+        "key": "DetectorNode",
+        "node": "detector_node",
+        "rids": [
+          5
+        ]
+      },
+      "status": "admitted",
+      "subscriber": {
+        "callback": "detections_callback",
+        "key": "PlannerNode",
+        "node": "planner_node",
+        "rid": 7
+      },
+      "topic": "/sentry/detections"
+    },
+    {
+      "delay_ns": 1000000,
+      "id": 2,
+      "publisher": {
+        "callbacks": [
+          "image_callback"
+        ],
+        "key": "DetectorNode",
+        "node": "detector_node",
+        "rids": [
+          5
+        ]
+      },
+      "status": "admitted",
+      "subscriber": {
+        "callback": "detections_callback",
+        "key": "DiagnosticsSinkNode",
+        "node": "diagnostics_sink_node",
+        "rid": 11
+      },
+      "topic": "/sentry/detections"
+    },
+    {
+      "delay_ns": 1000000,
+      "id": 3,
+      "publisher": {
+        "callbacks": [
+          "timer_callback"
+        ],
+        "key": "CameraNode",
+        "node": "camera_node",
+        "rids": [
+          2
+        ]
+      },
+      "status": "admitted",
+      "subscriber": {
+        "callback": "image_callback",
+        "key": "DetectorNode",
+        "node": "detector_node",
+        "rid": 5
+      },
+      "topic": "/sentry/image"
+    },
+    {
+      "delay_ns": 1000000,
+      "id": 4,
+      "publisher": {
+        "callbacks": [
+          "timer_callback"
+        ],
+        "key": "ImuNode",
+        "node": "imu_node",
+        "rids": [
+          0
+        ]
+      },
+      "status": "admitted",
+      "subscriber": {
+        "callback": "imu_callback",
+        "key": "FusionNode",
+        "node": "fusion_node",
+        "rid": 3
+      },
+      "topic": "/sentry/imu"
+    },
+    {
+      "delay_ns": 1000000,
+      "id": 5,
+      "publisher": {
+        "callbacks": [
+          "timer_callback"
+        ],
+        "key": "PlannerNode",
+        "node": "planner_node",
+        "rids": [
+          8
+        ]
+      },
+      "status": "admitted",
+      "subscriber": {
+        "callback": "plan_callback",
+        "key": "ControllerNode",
+        "node": "controller_node",
+        "rid": 9
+      },
+      "topic": "/sentry/plan"
+    },
+    {
+      "delay_ns": 1000000,
+      "id": 6,
+      "publisher": {
+        "callbacks": [
+          "timer_callback"
+        ],
+        "key": "LidarNode",
+        "node": "lidar_node",
+        "rids": [
+          1
+        ]
+      },
+      "status": "admitted",
+      "subscriber": {
+        "callback": "scan_callback",
+        "key": "FusionNode",
+        "node": "fusion_node",
+        "rid": 4
+      },
+      "topic": "/sentry/scan"
+    },
+    {
+      "delay_ns": 1000000,
+      "id": 7,
+      "publisher": {
+        "callbacks": [
+          "imu_callback",
+          "scan_callback"
+        ],
+        "key": "FusionNode",
+        "node": "fusion_node",
+        "rids": [
+          3,
+          4
+        ]
+      },
+      "status": "admitted",
+      "subscriber": {
+        "callback": "state_callback",
+        "key": "PlannerNode",
+        "node": "planner_node",
+        "rid": 6
+      },
+      "topic": "/sentry/state"
+    }
+  ],
+  "executables": [
+    "SentryPipeline"
+  ],
+  "generated_source_hash": "092531271bc0dd4f337c40546a216f0be042c5c48132c72b7f0cc3c0ab14cd7b",
+  "kind": "static",
+  "model_hash": "sha256:1f2405fd2ccb5d58aa869b112c441fb840cab126c48c45c83cc6f398d9937cc1",
+  "provider_marker": null,
+  "rids": [
+    {
+      "callback": "timer_callback",
+      "kind": "timer",
+      "node": "ImuNode",
+      "rid": 0,
+      "topic": ""
+    },
+    {
+      "callback": "timer_callback",
+      "kind": "timer",
+      "node": "LidarNode",
+      "rid": 1,
+      "topic": ""
+    },
+    {
+      "callback": "timer_callback",
+      "kind": "timer",
+      "node": "CameraNode",
+      "rid": 2,
+      "topic": ""
+    },
+    {
+      "callback": "imu_callback",
+      "kind": "sub",
+      "node": "FusionNode",
+      "rid": 3,
+      "topic": "/sentry/imu"
+    },
+    {
+      "callback": "scan_callback",
+      "kind": "sub",
+      "node": "FusionNode",
+      "rid": 4,
+      "topic": "/sentry/scan"
+    },
+    {
+      "callback": "image_callback",
+      "kind": "sub",
+      "node": "DetectorNode",
+      "rid": 5,
+      "topic": "/sentry/image"
+    },
+    {
+      "callback": "state_callback",
+      "kind": "sub",
+      "node": "PlannerNode",
+      "rid": 6,
+      "topic": "/sentry/state"
+    },
+    {
+      "callback": "detections_callback",
+      "kind": "sub",
+      "node": "PlannerNode",
+      "rid": 7,
+      "topic": "/sentry/detections"
+    },
+    {
+      "callback": "timer_callback",
+      "kind": "timer",
+      "node": "PlannerNode",
+      "rid": 8,
+      "topic": ""
+    },
+    {
+      "callback": "plan_callback",
+      "kind": "sub",
+      "node": "ControllerNode",
+      "rid": 9,
+      "topic": "/sentry/plan"
+    },
+    {
+      "callback": "cmd_callback",
+      "kind": "sub",
+      "node": "ActuatorSinkNode",
+      "rid": 10,
+      "topic": "/sentry/cmd"
+    },
+    {
+      "callback": "detections_callback",
+      "kind": "sub",
+      "node": "DiagnosticsSinkNode",
+      "rid": 11,
+      "topic": "/sentry/detections"
+    }
+  ],
+  "schema": "rcllf.manifest/1"
+}

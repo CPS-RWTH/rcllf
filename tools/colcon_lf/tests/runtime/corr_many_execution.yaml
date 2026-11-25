@@ -1,0 +1,13 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# Input for the correspondence_fixture corr_bringup runtime smoke case
+# (W3 slice S2), not a fixture. One build serves every
+# CORR_SCENARIO, and scenario "many" publishes 3 samples per tick on /corr/a,
+# so corr_publisher declares k = 3 (its loop leaves k unproven, W3 slice S3).
+# The declaration also covers /corr/b, whose k the analyzer cannot prove since
+# scenario "nested" stores pub_b_ in a global.
+# Expected bounds for /corr/a (200 ms timer, d 1 ms, T 100 ms, L 200 ms):
+# retain 7, carrier 3, burst 3.
+nodes:
+  corr_publisher:
+    max_publishes_per_invocation: 3

@@ -1,0 +1,22 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# B5: a signal evicts older stamps (clearOldTuples).
+# Hand derivation against message_filters 4.11.17 sync_policies/exact_time.h:
+# add() 111-123 (tuples_[stamp], slot overwritten: last wins), checkTuple()
+# 157-196 (full -> signal, erase, clearOldTuples(); then while size > q drop
+# tuples_.begin(), the smallest stamp), clearOldTuples() 199-219 (drop every
+# stamp <= last signal, ascending).
+# Arrival order = lf_arrival_order, sort by (tick, input, publish order)
+# (one drain firing per input and tag). Rows r<n> are 0-based in file order, stamps in ms.
+#   r0 a2, r1 a4 -> {2, 4}. r2 b4 fills 4 -> signal[r1, r2], last = 4;
+#   clearOldTuples drops stamp 2 <= 4 -> drop[r0, -].
+name: B5
+policy: exact
+queue: 3
+rows:
+  - {tick: 0, input: 0, stamp_ms: 2, payload: 1}  # r0
+  - {tick: 0, input: 0, stamp_ms: 4, payload: 2}  # r1
+  - {tick: 1, input: 1, stamp_ms: 4, payload: 3}  # r2
+expect:
+  - signal 1 2
+  - drop 0 -

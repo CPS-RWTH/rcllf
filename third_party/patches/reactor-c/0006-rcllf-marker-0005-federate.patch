@@ -1,0 +1,42 @@
+From: rcllf <noreply@rcllf.invalid>
+Subject: [PATCH] rcllf marker for 0005-federate-discard-rti-message-past-stop
+
+Puts the string "rcllf-reactor-c-patch:0005-federate-discard-rti-message-past-stop"
+into section rcllf_reactor_c_patches of every program that compiles this file.
+A tool can read the section back from the running program to check that
+a configured patch is present.
+
+The hunk removes and re-adds a line that only the fix has, so it applies only on
+top of the fix. The marker sits outside the fix hunk's context, so the fix patch
+still reads "previously applied" on a tree that has both. federate.c is compiled
+into federated programs only.
+
+Rcllf-Marker-For: 0005-federate-discard-rti-message-past-stop
+Rcllf-Marker-Scope: federated
+---
+--- a/core/federated/federate.c
++++ b/core/federated/federate.c
+@@ -648,15 +648,22 @@
+-      // Freshly allocated and never scheduled (ref_count 0): free it directly.
++      // Freshly allocated and never scheduled (ref_count 0): free it directly.
+       _lf_free_token(message_token);
+ #ifdef FEDERATED_DECENTRALIZED
+       _lf_decrement_tag_barrier_locked(env);
+ #endif
+       LF_MUTEX_UNLOCK(&env->mutex);
+       return 0;
+     }
+ 
+     // If the current time >= stop time, discard the message.
+     // But only if the stop time is not equal to the start time!
+     if (lf_tag_compare(env->current_tag, env->stop_tag) >= 0 && env->execution_started) {
++      {
++        // rcllf patch marker: the benchmark harness reads it back from the running
++        // program. The hunk also rewrites a line of the fix, so it applies only on top of it.
++        static const char rcllf_marker[]
++            __attribute__((section("rcllf_reactor_c_patches"), used, unused)) =
++            "rcllf-reactor-c-patch:0005-federate-discard-rti-message-past-stop";
++      }
+       lf_print_error("Received message too late. Already at stop tag.\n"
+                      "    Current tag is " PRINTF_TAG " and intended tag is " PRINTF_TAG ".\n"
+                      "    Discarding message and closing the network connection.",

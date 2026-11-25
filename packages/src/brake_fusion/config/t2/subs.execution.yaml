@@ -1,0 +1,72 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# Execution config for the two-radar brake_fusion system with the radar
+# tracker (t2_*.launch.py): the fusion reads its radar input on /radar/track,
+# and the tracker's /radar/range input takes the same timeout as the other
+# edges. Subscription keys are the node source topic names (before the launch
+# remap). reaction_order is set explicitly.
+schema_version: 1
+defaults:
+  # All eleven topic edges are admitted, a refusal is
+  # a generation error.
+  require_admitted: true
+  # control_failure_policy: stop.
+  #   Meaning: a CONTROL_FAILURE (the COMPLETE record of a sender activation
+  #   on a cross-federate edge never arrives, so the receiver cannot tell what
+  #   that activation published) requests an LF stop at once, besides failing
+  #   the run reconcile. Unit: none (choice report_continue | stop).
+  #   Derivation: a reconcile or control failure rejects the run,
+  #   so nothing the run outputs after one is evidence; stopping ends it there.
+  #   Valid: every build of this directory. A one-program build has no
+  #   cross-federate edge, so there the key has no effect; it is set so both
+  #   builds of a cell read the same policy.
+  #   Effect if report_continue: the run keeps going past the failure, its
+  #   later outputs are produced without a defined input set, and only the
+  #   reconcile verdict rejects it (the run exits non-zero either way).
+  control_failure_policy: stop
+  reaction_order: subscriptions_first
+nodes:
+  # The plant's state boundary: the simulator's step
+  # reaction runs before its /brake_cmd latch at one tag, so a brake
+  # command at tag t is applied from the step at t + 1 ms (integrate_step
+  # reads the latch). This keeps the plant loop free of a zero-delay
+  # reaction cycle and admits /wheel/speed and the /sim/state edges.
+  simulator:
+    reaction_order: timers_first
+# The simulator publishes one state per 1 ms step (min_input_period_ms). It
+# steps once per activation, so the four /sim/state edges are admitted
+# and take the take timeout T of this file like every other admitted edge.
+subscriptions:
+  radar:
+    /sim/state:
+      min_input_period_ms: 1
+      take_timeout_ms: 15
+  radar2:
+    /sim/state:
+      min_input_period_ms: 1
+      take_timeout_ms: 15
+  camera:
+    /sim/state:
+      min_input_period_ms: 1
+      take_timeout_ms: 15
+  wheel_speed:
+    /sim/state:
+      min_input_period_ms: 1
+      take_timeout_ms: 15
+  controller:
+    /wheel/speed:
+      take_timeout_ms: 15
+  # Join timeouts T of the admitted edges: 15 ms on every edge, the smallest value
+  # that had no spurious loss at idle in a timeout sweep. One program has no admitted controller
+  # input, so the /brake_cmd edge's T is the simulator's own 15 ms.
+  radar_tracker:
+    /radar/range:
+      take_timeout_ms: 15
+  fusion:
+    /radar/range:  # source name; the launch remaps it to /radar/track
+      take_timeout_ms: 15
+    /camera/range:
+      take_timeout_ms: 15
+  simulator:
+    /brake_cmd:
+      take_timeout_ms: 15

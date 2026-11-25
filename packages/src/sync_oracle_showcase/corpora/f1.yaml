@@ -1,0 +1,35 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# F1: duplicates plus overflow, arrival order unlike stamp order: separates every mutant.
+# Hand derivation against message_filters 4.11.17 sync_policies/exact_time.h:
+# add() 111-123 (tuples_[stamp], slot overwritten: last wins), checkTuple()
+# 157-196 (full -> signal, erase, clearOldTuples(); then while size > q drop
+# tuples_.begin(), the smallest stamp), clearOldTuples() 199-219 (drop every
+# stamp <= last signal, ascending).
+# Arrival order = lf_arrival_order, sort by (tick, input, publish order)
+# (one drain firing per input and tag). Rows r<n> are 0-based in file order, stamps in ms.
+#   arrival a9 r0, b3 r1, a6 r2, a6 r3, b6 r4, b2 r5, b9 r6.
+#   r0 {9}; r1 {3, 9}; r2 {3, 6, 9} > 2: drop 3 -> E0 drop[-, r1]; r3
+#   overwrites r2 at 6; r4 fills 6 -> E1 signal[r3, r4], last 6, 9 kept; r5
+#   {2, 9}; r6 fills 9 -> E2 signal[r0, r6], last 9, clear 2 -> E3 drop[-, r5].
+#   Signalled r0 r3 r4 r6, dropped r1 r5, overwritten r2.
+#   Mutants (ref impl): first_wins keeps r2 -> E1 signal[r2, r4], seq 1;
+#   evict_oldest_arrival drops 9 (arrived first) -> E0 drop[r0, -], seq 0;
+#   no_clear_old never emits E3, seq 3; q_plus1 keeps {3, 6, 9}, so E0 is
+#   signal[r3, r4] (then clear drops 3), seq 0.
+name: F1
+policy: exact
+queue: 2
+rows:
+  - {tick: 0, input: 0, stamp_ms: 9, payload: 1}  # r0
+  - {tick: 0, input: 1, stamp_ms: 3, payload: 2}  # r1
+  - {tick: 1, input: 0, stamp_ms: 6, payload: 3}  # r2
+  - {tick: 1, input: 0, stamp_ms: 6, payload: 4}  # r3
+  - {tick: 2, input: 1, stamp_ms: 6, payload: 5}  # r4
+  - {tick: 2, input: 1, stamp_ms: 2, payload: 6}  # r5
+  - {tick: 2, input: 1, stamp_ms: 9, payload: 7}  # r6
+expect:
+  - drop - 1
+  - signal 3 4
+  - signal 0 6
+  - drop - 5

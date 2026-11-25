@@ -1,0 +1,10 @@
+# Hand-derived outcomes of cases T1 to T7 (README "Expected values"), written
+# before the first converted run. wait bound 55 ms, on_timeout reject.
+# case	outcome	decided_ms	x	y
+T1	ok	60	0.030000000	0.000000000
+T2	ok	90	0.080000000	0.000000000
+T5	reject	145	0.000000000	0.000000000
+T3	ok	140	0.125000000	0.000000000
+T6	ok	150	0.000000000	2.000000000
+T7	failure	235	0.000000000	0.000000000
+T4	reject	385	0.000000000	0.000000000

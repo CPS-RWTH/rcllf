@@ -1,0 +1,22 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# A4: a late input-1 row older than the last published set.
+# Expected values: derived with an independent Python port of message_filters
+# 4.11.17 approximate_time.h (add() 210-258, process() 701-835 with the virtual
+# search from 787), fed in lf_arrival_order = sort by (tick, input, publish
+# order). The port is not shipped; the A corpora are not derived by hand, and
+# the library itself (oracle O1) must agree with them.
+# Rows r<n> are 0-based in file order, stamps in ms.
+name: A4
+policy: approx
+queue: 3
+rows:
+  - {tick: 0, input: 0, stamp_ms: 50, payload: 1}  # r0
+  - {tick: 0, input: 1, stamp_ms: 52, payload: 2}  # r1
+  - {tick: 1, input: 0, stamp_ms: 60, payload: 3}  # r2
+  - {tick: 2, input: 1, stamp_ms: 40, payload: 4}  # r3
+  - {tick: 3, input: 0, stamp_ms: 70, payload: 5}  # r4
+  - {tick: 3, input: 1, stamp_ms: 71, payload: 6}  # r5
+expect:
+  - signal 0 1
+  - signal 2 5

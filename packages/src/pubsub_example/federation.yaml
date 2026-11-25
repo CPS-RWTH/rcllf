@@ -1,0 +1,36 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# Decentralized-coordination federation map for pubsub_example
+# (LF regime 3 — see docs/design/time-and-coordination.md and
+# docs/features/federation.md). Equivalent partition to `--federate per-node`
+# (one federate per node), but as an explicit YAML so `coordination` and a
+# per-link `stp_offset` can be set.
+#
+# Usage:
+#   colcon lf-generate --system-json <...>/pubsub_example/bringup/system.json \
+#     --federate packages/src/pubsub_example/federation.yaml
+#
+# The stp_offset below (1 usec) is deliberately far smaller than any real
+# transport delay (even loopback TCP), so the subscriber federate observes an
+# STP (safe-to-process) violation on every message — this is the "provoke
+# tardiness" fixture referenced by docs/features/federation.md, not a tuned
+# production value. A real deployment should set stp_offset comfortably above
+# the worst-case observed transport latency (see the `after_overrides`
+# convention this key rides alongside).
+
+system: pubsub_example_bringup
+coordination: decentralized
+
+federates:
+  publisher_node:
+    nodes:
+      - publisher_node
+  subscriber_node:
+    nodes:
+      - subscriber_node
+
+after_overrides:
+  - from: publisher_node.sensor_data
+    to:   subscriber_node.sensor_data
+    after: 5ms
+    stp_offset: 1usec

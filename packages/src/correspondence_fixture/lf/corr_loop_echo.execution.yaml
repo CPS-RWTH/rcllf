@@ -1,0 +1,13 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# rcllf execution config for launch/corr_loop_echo.launch.py.
+#
+# corr_ping_echo's /corr/pong callback publishes a ping, so ping and pong form
+# a callback cycle with no derivable rate. Its true input period bounds it:
+# corr_pong answers only the timer's ping, one pong per 200 ms tick. With
+# both edges admitted at d = 0 the loop is a causality loop and colcon
+# lf-generate refuses the system (the expected outcome of this fixture).
+subscriptions:
+  corr_ping_echo:
+    /corr/pong:
+      min_input_period_ms: 200

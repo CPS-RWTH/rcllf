@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rcllf.semantic_report/1",
+  "title": "rcllf semantic report block of metrics.json",
+  "type": "object",
+  "required": [
+    "schema",
+    "claims"
+  ],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "rcllf.semantic_report/1"
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "subject",
+          "kind",
+          "integrity",
+          "integrity_codes",
+          "coverage",
+          "coverage_codes",
+          "reconciliation",
+          "reconciliation_codes",
+          "overall"
+        ],
+        "properties": {
+          "subject": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "correspondence",
+              "chain",
+              "physical_hop_latency",
+              "drop_accounting"
+            ]
+          },
+          "integrity": {
+            "type": "string",
+            "enum": [
+              "complete",
+              "incomplete"
+            ]
+          },
+          "integrity_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "coverage": {
+            "type": "string",
+            "enum": [
+              "covered",
+              "uncovered",
+              "unsupported"
+            ]
+          },
+          "coverage_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reconciliation": {
+            "type": "string",
+            "enum": [
+              "reconciled",
+              "unreconciled",
+              "not_evaluated"
+            ]
+          },
+          "reconciliation_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "overall": {
+            "type": "string",
+            "enum": [
+              "supported",
+              "incomplete",
+              "unsupported",
+              "contradicted"
+            ]
+          }
+        }
+      }
+    },
+    "epochs": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "metrics": {
+      "type": "object"
+    }
+  }
+}

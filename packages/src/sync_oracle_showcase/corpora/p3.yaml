@@ -1,0 +1,70 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# P3: fork/join: fork_source bursts 4 rows per tick with repeated stamps, two branch_workers copy them.
+# Hand derivation against message_filters 4.11.17 sync_policies/exact_time.h:
+# add() 111-123 (tuples_[stamp], slot overwritten: last wins), checkTuple()
+# 157-196 (full -> signal, erase, clearOldTuples(); then while size > q drop
+# tuples_.begin(), the smallest stamp), clearOldTuples() 199-219 (drop every
+# stamp <= last signal, ascending).
+# Arrival order = lf_arrival_order, sort by (tick, input, publish order)
+# (one drain firing per input and tag). Rows r<n> are 0-based in file order, stamps in ms.
+#   Join (exact, q 3) input i is branch i's copy (slot row = source row). The
+#   source publishes a tick's 4 rows at one tag; each branch's d = 0 drain takes
+#   all 4 in one firing and publishes 4 copies at that tag; the join then drains
+#   input 0's 4 copies, then input 1's. Tick k, stamps sa = 100k+10 (rows
+#   a0 = 4k, a1 = 4k+1) and sb = 100k+20 (b0 = 4k+2, b1 = 4k+3):
+#     input 0: a0 -> {sa: a0,-}; a1 overwrites a0 (last wins); b0 -> {sb: b0,-};
+#       b1 overwrites b0. With the pending {sb(k-1): -,b1(k-1)} that is 3 <= q.
+#     input 1: a0' fills sa -> signal[a1, a0], clearOld drops sb(k-1)
+#       -> drop[-, b1(k-1)] (k >= 1); a1' re-creates {sa: -,a1'} (an older
+#       stamp is accepted); b0' fills sb -> signal[b1, b0], clearOld drops sa
+#       -> drop[-, a1]; b1' stays pending {sb: -,b1}.
+#   So the join pairs by stamp, not one-to-one: rows a0 and b0 of input 0 are
+#   overwritten, a1 and b1 of input 1 dropped or (r19) pending at end. Both work
+#   assignments (8/0 and 0/8 ms) give this stream, since the work never moves
+#   a tag. Under stock ROS the arrival order follows the work (the contrast).
+name: P3
+policy: exact
+kind: forkjoin
+queue: 3
+rows:
+  - {tick: 0, input: 0, stamp_ms: 10, payload: 0}  # r0
+  - {tick: 0, input: 0, stamp_ms: 10, payload: 1}  # r1
+  - {tick: 0, input: 0, stamp_ms: 20, payload: 2}  # r2
+  - {tick: 0, input: 0, stamp_ms: 20, payload: 3}  # r3
+  - {tick: 1, input: 0, stamp_ms: 110, payload: 4}  # r4
+  - {tick: 1, input: 0, stamp_ms: 110, payload: 5}  # r5
+  - {tick: 1, input: 0, stamp_ms: 120, payload: 6}  # r6
+  - {tick: 1, input: 0, stamp_ms: 120, payload: 7}  # r7
+  - {tick: 2, input: 0, stamp_ms: 210, payload: 8}  # r8
+  - {tick: 2, input: 0, stamp_ms: 210, payload: 9}  # r9
+  - {tick: 2, input: 0, stamp_ms: 220, payload: 10}  # r10
+  - {tick: 2, input: 0, stamp_ms: 220, payload: 11}  # r11
+  - {tick: 3, input: 0, stamp_ms: 310, payload: 12}  # r12
+  - {tick: 3, input: 0, stamp_ms: 310, payload: 13}  # r13
+  - {tick: 3, input: 0, stamp_ms: 320, payload: 14}  # r14
+  - {tick: 3, input: 0, stamp_ms: 320, payload: 15}  # r15
+  - {tick: 4, input: 0, stamp_ms: 410, payload: 16}  # r16
+  - {tick: 4, input: 0, stamp_ms: 410, payload: 17}  # r17
+  - {tick: 4, input: 0, stamp_ms: 420, payload: 18}  # r18
+  - {tick: 4, input: 0, stamp_ms: 420, payload: 19}  # r19
+expect:
+  - signal 1 0
+  - signal 3 2
+  - drop - 1
+  - signal 5 4
+  - drop - 3
+  - signal 7 6
+  - drop - 5
+  - signal 9 8
+  - drop - 7
+  - signal 11 10
+  - drop - 9
+  - signal 13 12
+  - drop - 11
+  - signal 15 14
+  - drop - 13
+  - signal 17 16
+  - drop - 15
+  - signal 19 18
+  - drop - 17

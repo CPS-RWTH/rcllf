@@ -1,0 +1,73 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+#
+# Shared setup of every CI code job: rosdep dependencies, the pinned
+# ROS binary check, the ccache restore, the colcon build of packages/ and the
+# editable install of the Python tools. Runs inside the dev image after checkout.
+
+name: Build workspace
+description: Install dependencies, build packages/ with the warm ccache, install the Python tools.
+
+inputs:
+  save-cache:
+    description: Save the ccache after the build ("true" in one job only, so parallel jobs do not race on the key).
+    default: "false"
+  corr-test-hooks:
+    description: Build ros2_lf_binding with -DRCLLF_CORR_TEST_HOOKS=ON ("true" only where tests inject correspondence faults).
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    # scripts/rosdep_install.sh retries `rosdep update` and falls back to a
+    # cached index if every attempt fails, so a transient reset on one
+    # rosdistro source cannot red this job. It announces any fallback in
+    # the log. `rosdep install -r` only warns on an unresolved key, so the
+    # script follows it with `rosdep check`, which fails this step on any key
+    # that does not resolve or is not installed.
+    #
+    # The commands of every run step live in scripts/ci/build_workspace.sh,
+    # so a local run outside GitHub can use the same ones.
+    - name: Install rosdep dependencies
+      shell: bash
+      run: scripts/ci/build_workspace.sh deps
+
+    # The publication-identity guarantee holds only for the pinned ROS
+    # binaries; print them and fail on drift. The
+    # publication_identity_probe itself runs in `colcon test` (lint job).
+    - name: Record pinned ROS binary versions
+      shell: bash
+      run: docker/ros-apt/check-pins.sh
+
+    # Compiler cache across runs. CCACHE_DIR lives under the checkout, not
+    # $HOME: container jobs run with HOME=/github/home, which actions/cache
+    # cannot see.
+    - name: Restore ccache
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: ccache-${{ runner.os }}-${{ github.sha }}
+        restore-keys: |
+          ccache-${{ runner.os }}-
+
+    - name: Build packages
+      shell: bash
+      env:
+        CCACHE_DIR: ${{ github.workspace }}/.ccache
+        CORR_TEST_HOOKS: ${{ inputs.corr-test-hooks }}
+      run: scripts/ci/build_workspace.sh build
+
+    - name: Save ccache
+      if: inputs.save-cache == 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ github.workspace }}/.ccache
+        key: ccache-${{ runner.os }}-${{ github.sha }}
+
+    # GitHub skips the image entrypoint, so install the tools the way
+    # docker/entrypoint.sh does (their dependencies are in the image). Tests
+    # import colcon_lf; lf_build.sh needs the colcon lf verbs. The other tools
+    # are found under tools/, so the step works in every tree that carries them.
+    - name: Install Python tools
+      shell: bash
+      run: scripts/ci/build_workspace.sh tools

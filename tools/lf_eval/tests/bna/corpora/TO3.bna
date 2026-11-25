@@ -1,0 +1,15 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# Expectations below were derived by hand.
+# TO3 at the deadline: the completing sample admitted at the deadline tag (148, 0) wins.
+params epoch=1 delta=10 lateness=0,0 capacity=8,8 retention=1000 timeout=47
+admit 0 100 1:a:1 @101
+admit 1 105 1:b:1 @106
+admit 0 130 1:a:2 @131
+admit 1 115 1:b:2 @148
+wake @148
+close shutdown @170
+expect D 1:a:1 MATCHED 1:b:1 @148
+expect S 1:b:1 SELECTED @148
+expect S 1:b:2 SUPERSEDED @148
+expect D 1:a:2 REJECTED(shutdown) @170

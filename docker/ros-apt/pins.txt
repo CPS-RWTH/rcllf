@@ -1,0 +1,40 @@
+# ROS 2 apt source of truth for the dev/CI image.
+#
+# The image installs every ros-jazzy-* package from ONE dated snapshot of the
+# ROS apt repository, so a rebuild resolves the same binaries. packages.ros.org
+# keeps only the newest build of each package, so exact version pins against it
+# break at the next sync; a snapshot does not move.
+#
+# The four packages below carry the binding's publication-identity guarantee
+# (it reads the publisher identity of each sample through these APIs). The image build
+# fails if the snapshot installs anything else for them, and CI prints and
+# re-checks them (docker/ros-apt/check-pins.sh).
+#
+# Upgrade procedure (deliberate, never drive-by):
+#   1. Pick a newer snapshot from http://snapshots.ros.org/jazzy/ and read its
+#      versions of the four packages from
+#      .../ubuntu/dists/noble/main/binary-amd64/Packages.gz and
+#      .../binary-arm64/Packages.gz.
+#   2. Inspect the rclcpp / rmw / rmw_fastrtps_cpp / Fast DDS source deltas
+#      for changes to the publisher identity and ownership APIs the binding uses.
+#   3. Update snapshot= and the four lines here, and EXPECTED_PACKAGES in
+#      packages/lf-frame/ros2_lf_binding/test/run_publication_identity_probe.py.
+#   4. Rebuild the image and rerun the publication-identity probe (colcon test
+#      --packages-select ros2_lf_binding, test publication_identity_probe).
+#   5. Record the new versions and the probe result in the commit message.
+# Pin lines are `<package> <architecture> <version>`. The amd64 and arm64
+# (Jetson Orin) builds of one snapshot carry the same upstream
+# version and differ only in the build timestamp; check-pins.sh checks the
+# lines of the architecture it runs on.
+# The snapshot signing key (ros-snapshots.asc, fingerprint below) expires
+# 2027-06-01; refresh it from hkps://keyserver.ubuntu.com before then.
+snapshot=2026-10-05
+key_fingerprint=4B63CF8FDE49746E98FA01DDAD19BAB3CBF125EA
+ros-jazzy-fastrtps amd64 2.14.7-1noble.20260911.035053
+ros-jazzy-rclcpp amd64 28.1.22-1noble.20260911.105434
+ros-jazzy-rmw amd64 7.3.4-1noble.20260911.050254
+ros-jazzy-rmw-fastrtps-cpp amd64 8.4.4-1noble.20260911.100940
+ros-jazzy-fastrtps arm64 2.14.7-1noble.20260911.035410
+ros-jazzy-rclcpp arm64 28.1.22-1noble.20260911.060156
+ros-jazzy-rmw arm64 7.3.4-1noble.20260911.050452
+ros-jazzy-rmw-fastrtps-cpp arm64 8.4.4-1noble.20260911.054759

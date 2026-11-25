@@ -1,0 +1,392 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+
+# =============================================================================
+# Shared configuration
+#
+# All services share the host PID and IPC namespaces and mount the LTTng
+# relay socket (/var/run/lttng). pid+ipc host are both required: pid so the
+# sessiond can see all processes, ipc so the UST ring buffer shared memory
+# segments (/dev/shm) are shared between the tracer and traced containers.
+#
+# WORKSPACE controls both the bind-mount target and every in-container path
+# used below. Override it (e.g. `WORKSPACE=/ws docker compose ...`) if the
+# mount point ever needs to move — every service references `${WORKSPACE}`
+# rather than a literal `/workspace`.
+#
+# Compose profiles:
+#   (none)      — core services: dev, lint, docs, tracer. `docker compose
+#                 run --rm dev` works with zero flags.
+#   (examples)  — no profile: `docker compose run --rm dev ros2 launch <pkg> <file>`.
+#   lf          — lfc analyze/generate/build/smoke-test pipeline.
+#   federation  — multi-federate LF execution (RTI + federated pubsub demo).
+# =============================================================================
+x-workspace: &workspace ${WORKSPACE:-/workspace}
+
+x-common: &common
+  build:
+    context: .
+    dockerfile: docker/Dockerfile
+    target: deps
+    args:
+      WORKSPACE: ${WORKSPACE:-/workspace}
+  image: ghcr.io/cps-rwth/rcllf:dev
+  volumes:
+    - .:${WORKSPACE:-/workspace}
+    - lttng-run:/tmp/lttng-home
+    - vscode-local:/home/vscode/.local
+    - /var/run/lttng:/var/run/lttng:rw
+  pid: host
+  ipc: host
+  network_mode: host
+  environment: &common-env
+    WORKSPACE: *workspace
+    # Set ROS_DOMAIN_ID on the host to keep your containers apart from other
+    # ROS 2 users on the same network (network_mode: host).
+    ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-0}
+    RMW_IMPLEMENTATION: rmw_fastrtps_cpp
+    LTTNG_HOME: /tmp/lttng-home
+    LFC: /opt/lfc/bin/lfc
+    # Runtime overrides of the execution configuration, passed through from the
+    # host. Empty means unset: the binding then uses each subscription's
+    # configured take_mode and maxwait_ms (defaults skip and 100 ms) and logs no
+    # override warning. ROS2_LF_TAKE_TIMEOUT_MS is the alias of
+    # ROS2_LF_MAXWAIT_MS; a host ROS2_LF_MAXWAIT_MS also sets the alias's
+    # default, so it alone never disagrees.
+    ROS2_LF_TAKE_MODE: ${ROS2_LF_TAKE_MODE:-}
+    ROS2_LF_MAXWAIT_MS: ${ROS2_LF_MAXWAIT_MS:-}
+    ROS2_LF_TAKE_TIMEOUT_MS: ${ROS2_LF_TAKE_TIMEOUT_MS:-${ROS2_LF_MAXWAIT_MS:-}}
+    # Build limit for every colcon build in these containers: 2
+    # packages at once x 3 make jobs = at most 6 compilers, as in the
+    # entrypoint. Unbounded, a lint build ran 56 cc1plus and 20.8 GiB.
+    # Service commands pass the worker count to colcon; make reads MAKEFLAGS.
+    ENTRYPOINT_PARALLEL_WORKERS: ${ENTRYPOINT_PARALLEL_WORKERS:-2}
+    MAKEFLAGS: ${MAKEFLAGS:--j3}
+
+# =============================================================================
+# Services
+# =============================================================================
+services:
+
+  # ---------------------------------------------------------------------------
+  # dev: Main development container
+  # Mounts the entire workspace. Builds ROS2 packages on entry.
+  # Usage: docker compose run --rm dev
+  # ---------------------------------------------------------------------------
+  dev:
+    <<: *common
+    stdin_open: true
+    tty: true
+
+  # ---------------------------------------------------------------------------
+  # lint: Runs colcon test (linting checks) and exits
+  # Usage: docker compose run --rm lint
+  # ---------------------------------------------------------------------------
+  lint:
+    <<: *common
+    command: >
+      bash -c "
+        cd ${WORKSPACE:-/workspace}/packages &&
+        colcon build --symlink-install --parallel-workers $${ENTRYPOINT_PARALLEL_WORKERS} &&
+        source install/setup.bash &&
+        colcon test --event-handlers console_direct+ --python-testing pytest &&
+        colcon test-result --verbose
+      "
+
+  # ---------------------------------------------------------------------------
+  # docs: Serves MkDocs documentation at http://127.0.0.1:8000
+  # Usage: docker compose up docs
+  # ---------------------------------------------------------------------------
+  docs:
+    <<: *common
+    entrypoint: [""]
+    command: mkdocs serve -a 0.0.0.0:8000
+    working_dir: *workspace
+    ports:
+      - "8000:8000"
+
+  # ---------------------------------------------------------------------------
+  # tracer: Starts an LTTng tracing session that captures all ROS2 events
+  # from every container (possible because all services share pid: host).
+  #
+  # A single lttng-sessiond sees all processes on the host PID namespace,
+  # so ros2 trace here captures nodes running in any other service.
+  #
+  # Usage:
+  #   docker compose up tracer                  # start tracing
+  #   docker compose run --rm dev ros2 launch pubsub_example bringup.launch.py  # traced automatically
+  #   docker compose stop tracer                # stop & save trace
+  # ---------------------------------------------------------------------------
+  tracer:
+    <<: *common
+    init: true
+    entrypoint: [""]
+    command: ${WORKSPACE:-/workspace}/docker/trace.sh
+
+  # ---------------------------------------------------------------------------
+  # test-binding: Build ros2_lf_binding with BUILD_TESTING=ON and run gtests.
+  # Usage: docker compose run --rm test-binding
+  # ---------------------------------------------------------------------------
+  test-binding:
+    <<: *common
+    profiles: [lf]
+    command: >
+      bash -c "
+        source ${WORKSPACE:-/workspace}/packages/install/setup.bash &&
+        cmake -DBUILD_TESTING=ON ${WORKSPACE:-/workspace}/packages/build/ros2_lf_binding &&
+        cmake --build ${WORKSPACE:-/workspace}/packages/build/ros2_lf_binding --target test_rid_table test_time_source test_reaction_dispatch &&
+        cd ${WORKSPACE:-/workspace}/packages/build/ros2_lf_binding &&
+        ctest --output-on-failure -R 'test_rid_table|test_time_source|test_reaction_dispatch'
+      "
+
+  # ===========================================================================
+  # LF pipeline: analyze → generate → build → smoke-test (lfc + ros2_lf_binding)
+  # Usage: docker compose --profile lf run --rm lf-build [PACKAGE...]
+  # ===========================================================================
+
+  # lf-build: `docker/lf_build.sh [PACKAGE...]` — analyze, generate, build and
+  # smoke-test each package under lfc (default pubsub_example). The package
+  # list replaces the compose command:
+  #   docker compose --profile lf run --rm lf-build service_example action_example
+  lf-build:
+    <<: *common
+    profiles: [lf]
+    entrypoint: ["/entrypoint.sh", "${WORKSPACE:-/workspace}/docker/lf_build.sh"]
+    command: [pubsub_example]
+
+  colcon-lf-test:
+    <<: *common
+    profiles: [lf]
+    command: >
+      bash -c "
+        mkdir -p ${WORKSPACE:-/workspace}/output &&
+        cd ${WORKSPACE:-/workspace}/tools/colcon_lf &&
+        pytest tests/ -v 2>&1 | tee ${WORKSPACE:-/workspace}/output/colcon-lf-test.log
+      "
+
+  # ---------------------------------------------------------------------------
+  # soundness-check: Phase 7 topology-diff checker — analyze -> traced bounded
+  # run -> `lf-eval analyze --metrics topology` (see scripts/soundness_check.sh
+  # and docs/features/soundness.md). Advisory by default (always exits 0);
+  # set SOUNDNESS_STRICT=1 to fail on a missing_from_model finding.
+  # Usage:
+  #   docker compose --profile lf run --rm soundness-check
+  #   docker compose --profile lf run --rm -e SOUNDNESS_PACKAGE=pubsub_example soundness-check
+  # ---------------------------------------------------------------------------
+  soundness-check:
+    <<: *common
+    profiles: [lf]
+    environment:
+      <<: *common-env
+      SOUNDNESS_PACKAGE: ${SOUNDNESS_PACKAGE:-pubsub_example}
+      SOUNDNESS_LAUNCH: ${SOUNDNESS_LAUNCH:-bringup}
+      SOUNDNESS_DURATION: ${SOUNDNESS_DURATION:-20}
+      SOUNDNESS_STRICT: ${SOUNDNESS_STRICT:-0}
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+        cd ${WORKSPACE:-/workspace}/packages
+        source install/setup.bash
+        cd ${WORKSPACE:-/workspace}
+        EXTRA_ARGS=()
+        if [ "$${SOUNDNESS_STRICT:-0}" = "1" ]; then
+          EXTRA_ARGS+=(--strict)
+        fi
+        ./scripts/soundness_check.sh "$${SOUNDNESS_PACKAGE:-pubsub_example}" \
+          "$${SOUNDNESS_LAUNCH:-bringup}" --duration "$${SOUNDNESS_DURATION:-20}" \
+          "$${EXTRA_ARGS[@]}"
+
+  analyzer:
+    <<: *common
+    profiles: [lf]
+    command: >
+      bash -c "
+        cd ${WORKSPACE:-/workspace}/packages &&
+        colcon lf-analyze --format all
+      "
+
+  reviz:
+    <<: *common
+    profiles: [lf]
+    command: >
+      bash -c "
+        cd ${WORKSPACE:-/workspace}/packages &&
+        colcon lf-analyze --viz-only --format all
+      "
+
+  # ===========================================================================
+  # Federation services (Phase 7)
+  #
+  # rti: LF Run-Time Infrastructure daemon — coordinates logical time across
+  #      federate processes over TCP. Must be running before any federate starts.
+  #      Usage: docker compose --profile federation up -d rti
+  #
+  # lf-build-federated: Build pubsub_example as a 2-federate system.
+  #   Usage: docker compose --profile federation run --rm lf-build-federated
+  #
+  # lf-pubsub-federated: Run pubsub_example under 2-federate LF control.
+  #   Prerequisite: docker compose --profile federation run --rm lf-build-federated
+  #   Usage: docker compose --profile federation run --rm lf-pubsub-federated
+  #
+  # lf-build-federated-decentralized / lf-pubsub-federated-decentralized:
+  #   Same pubsub_example, but LF regime 3 (decentralized coordination)
+  #   via packages/src/pubsub_example/federation.yaml — STP-offset based,
+  #   no RTI-mediated tag advance, tardy messages possible. See
+  #   docs/design/time-and-coordination.md#regime-3-federated-decentralized.
+  #   Usage: docker compose --profile federation run --rm lf-build-federated-decentralized
+  #          docker compose --profile federation run --rm lf-pubsub-federated-decentralized
+  # ===========================================================================
+
+  rti:
+    profiles: [federation]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: lf-rti
+    image: ghcr.io/cps-rwth/rcllf:lf-rti
+    network_mode: host
+    environment:
+      RTI_PORT: ${RTI_PORT:-15045}
+    command: ["-n", "${RTI_NUM_FEDERATES:-2}", "-p", "${RTI_PORT:-15045}"]
+
+  lf-build-federated:
+    <<: *common
+    profiles: [federation]
+    environment:
+      <<: *common-env
+      FEDERATE: per-node
+    command: ${WORKSPACE:-/workspace}/docker/lf_build.sh pubsub_example
+
+  lf-build-federated-decentralized:
+    <<: *common
+    profiles: [federation]
+    environment:
+      <<: *common-env
+      FEDERATE: ${WORKSPACE:-/workspace}/packages/src/pubsub_example/federation.yaml
+    command: ${WORKSPACE:-/workspace}/docker/lf_build.sh pubsub_example
+
+  lf-pubsub-federated:
+    <<: *common
+    profiles: [federation]
+    environment:
+      <<: *common-env
+      LFC: /opt/lfc/bin/lfc
+      RTI_PORT: ${RTI_PORT:-15045}
+      # RTI_HOST is intentionally unset: the orchestrator launch file starts
+      # its own RTI process for this run. Set RTI_HOST=localhost to point at
+      # an externally-managed RTI (e.g. the `rti` compose service) instead.
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+        source /opt/ros/jazzy/setup.bash
+        cd ${WORKSPACE:-/workspace}/packages
+        source install/setup.bash
+        # Launch the orchestrator launch file which starts all federates
+        timeout 30 ros2 launch lf_generated_pubsub_example_bringup_federated \
+          lf_bringup_federated.launch.py || true
+        echo "==> Federated smoke test complete"
+
+  lf-pubsub-federated-decentralized:
+    <<: *common
+    profiles: [federation]
+    environment:
+      <<: *common-env
+      LFC: /opt/lfc/bin/lfc
+      RTI_PORT: ${RTI_PORT:-15045}
+      # Same "orchestrator starts its own RTI" note as lf-pubsub-federated:
+      # decentralized coordination still uses the RTI for federate startup
+      # and clock sync, just not for cross-federate tag-advance permission.
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+        source /opt/ros/jazzy/setup.bash
+        cd ${WORKSPACE:-/workspace}/packages
+        source install/setup.bash
+        # Same orchestrator launch file as lf-pubsub-federated; which
+        # coordination mode is active was fixed at generate/build time by
+        # lf-build-federated-decentralized (packages/src/pubsub_example/federation.yaml).
+        timeout 30 ros2 launch lf_generated_pubsub_example_bringup_federated \
+          lf_bringup_federated.launch.py || true
+        echo "==> Decentralized federated smoke test complete"
+
+  # ---------------------------------------------------------------------------
+  # Standalone-federate services for running RTI / publisher / subscriber in
+  # separate terminals.
+  #
+  # Usage:
+  #   Terminal 1:  docker compose --profile federation up rti
+  #   Terminal 2:  docker compose --profile federation run --rm lf-fed-publisher
+  #   Terminal 3:  docker compose --profile federation run --rm lf-fed-subscriber
+  #
+  # Each federate connects to the RTI via RTI_HOST:RTI_PORT (defaults
+  # localhost:15045 — works with `network_mode: host` on all services).
+  # ---------------------------------------------------------------------------
+  # Start the RTI explicitly first:  docker compose --profile federation up -d rti
+  # The federate services do NOT auto-start the RTI — federation is all-or-nothing
+  # and conflating "I forgot the RTI" with "I forgot the other federate" leads to
+  # confusing failure modes (publisher hangs, subscriber spams Broken pipe).
+  # FED_TIMEOUT (seconds, default 60) bounds how long a standalone federate waits
+  # for its peers and the RTI before exiting. Override for long-running federations.
+  lf-fed-publisher:
+    <<: *common
+    profiles: [federation]
+    # Skip the entrypoint's full workspace rebuild — assume `lf-build-federated`
+    # has already built and installed everything.
+    entrypoint: [""]
+    # init: true uses tini as PID 1 so Ctrl+C propagates cleanly to the federate
+    # binary; without it, bash-as-PID-1 swallows SIGINT until children exit.
+    init: true
+    environment:
+      <<: *common-env
+      RTI_HOST: ${RTI_HOST:-localhost}
+      RTI_PORT: ${RTI_PORT:-15045}
+      FED_TIMEOUT: ${FED_TIMEOUT:-60}
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+        source /opt/ros/jazzy/setup.bash
+        cd ${WORKSPACE:-/workspace}/packages
+        source install/setup.bash
+        echo "==> Connecting to RTI at $${RTI_HOST}:$${RTI_PORT} (timeout $${FED_TIMEOUT}s)"
+        echo "==> RTI must already be running.  Start it first with: docker compose --profile federation up -d rti"
+        # exec replaces the bash shell so SIGINT goes directly to ros2 launch.
+        exec timeout --foreground $${FED_TIMEOUT} ros2 launch lf_generated_pubsub_example_bringup_federated_publisher_node \
+          lf_publishernodesystem.launch.py
+
+  lf-fed-subscriber:
+    <<: *common
+    profiles: [federation]
+    entrypoint: [""]
+    init: true
+    environment:
+      <<: *common-env
+      RTI_HOST: ${RTI_HOST:-localhost}
+      RTI_PORT: ${RTI_PORT:-15045}
+      FED_TIMEOUT: ${FED_TIMEOUT:-60}
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+        source /opt/ros/jazzy/setup.bash
+        cd ${WORKSPACE:-/workspace}/packages
+        source install/setup.bash
+        echo "==> Connecting to RTI at $${RTI_HOST}:$${RTI_PORT} (timeout $${FED_TIMEOUT}s)"
+        echo "==> RTI must already be running.  Start it first with: docker compose --profile federation up -d rti"
+        exec timeout --foreground $${FED_TIMEOUT} ros2 launch lf_generated_pubsub_example_bringup_federated_subscriber_node \
+          lf_subscribernodesystem.launch.py
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  lttng-run:
+  vscode-local:

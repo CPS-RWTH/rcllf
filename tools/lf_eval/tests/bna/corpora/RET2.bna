@@ -1,0 +1,8 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# Expectations below were derived by hand.
+# RET2 a lone candidate followed by shutdown expires at its own deadline, not at close.
+params epoch=1 delta=10 lateness=0,0 capacity=8,8 retention=50 timeout=500
+admit 1 100 1:b:1 @101
+close shutdown @300
+expect S 1:b:1 EXPIRED @151

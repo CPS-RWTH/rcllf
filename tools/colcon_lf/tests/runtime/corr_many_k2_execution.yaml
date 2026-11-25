@@ -1,0 +1,8 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# W3 slice S2 negative output check, test_runtime_corr_burst.py:
+# corr_publisher declares k = 2, but scenario "many" publishes 3 per tick, so
+# the reconcile at shutdown fails with burst_exceeded and the run exits 3.
+nodes:
+  corr_publisher:
+    max_publishes_per_invocation: 2

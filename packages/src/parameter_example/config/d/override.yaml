@@ -1,0 +1,11 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# Node-keyed sections between two inline dicts (inline_override.launch.py).
+/node_d:
+  ros__parameters:
+    robot_name: "node_d_from_file"
+    update_rate: 7
+/fq/node_f:
+  ros__parameters:
+    robot_name: "node_f_from_file"
+    update_rate: 7

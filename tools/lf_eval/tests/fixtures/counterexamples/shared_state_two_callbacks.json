@@ -1,0 +1,44 @@
+{
+  "schema": "rcllf.counterexample/1",
+  "id": "CE1-shared-state-two-callbacks",
+  "refutes": "U1: observable outputs are identical under every admissible schedule, for any application whose callbacks are deterministic",
+  "system": {
+    "node": "fusion-like node with one field of shared state, last_imu, initially 0",
+    "callbacks": {
+      "on_imu(v)": "last_imu := v; no output",
+      "on_scan(r)": "publish (r, last_imu)"
+    },
+    "inputs": "one IMU sample v=7 and one scan r=100, both ready at the same instant (the same LF tag, or the same executor wait-set pass)",
+    "deterministic": "each callback is a pure function of its input and last_imu"
+  },
+  "schedule_domain": {
+    "unconstrained": [["on_imu", "on_scan"], ["on_scan", "on_imu"]],
+    "lf_reaction_priority": [["on_imu", "on_scan"]]
+  },
+  "expected_outputs": {
+    "on_imu,on_scan": [[100, 7]],
+    "on_scan,on_imu": [[100, 0]]
+  },
+  "confluent_control": {
+    "callbacks": {
+      "on_imu(v)": "total := total + v; no output",
+      "on_scan(r)": "total := total + r; publish total"
+    },
+    "note": "the shared write commutes but the observation does not: on_scan publishes 107 after on_imu and 100 before it, so commuting state updates alone are not confluence",
+    "expected_outputs": {
+      "on_imu,on_scan": [[107]],
+      "on_scan,on_imu": [[100]]
+    },
+    "final_state": 107
+  },
+  "commuting_control": {
+    "callbacks": {
+      "on_imu(v)": "publish v",
+      "on_scan(r)": "publish r"
+    },
+    "note": "no shared state: the multiset of outputs is the same under both orders, the sequence is not",
+    "expected_output_multisets": [[7], [100]]
+  },
+  "conclusion": "Two deterministic callbacks that share state and have two permitted orders give different outputs. Schedule invariance therefore needs an order constraint (one schedule left) or a proof that the remaining choices are confluent for the stated output relation. Neither is derived from repeated runs.",
+  "boundary": "A model-level fixture, not a ROS 2 run. It makes no statement about which order a given ROS 2 executor picks, and it is not a property of sentry_pipeline, whose fusion_node callbacks keep no state."
+}

@@ -1,0 +1,32 @@
+[CorrBringup-1] [INFO] [1792636538.159676482] [corr_publisher]: corr_pub: scenario=stale
+[CorrBringup-1] [INFO] [1792636538.170038822] [corr_publisher]: corr_pub: helper published H
+[CorrBringup-1] [INFO] [1792636538.221757500] [corr_publisher]: corr_pub: tick=1 topic=/corr/a payload=t1k1 origin=timer
+[CorrBringup-1] [INFO] [1792636538.223129650] [corr_sub_1]: corr_sub: node=corr_sub_1 topic=/corr/a payload=t1k1 stamp=1 seq=2
+[CorrBringup-1] [INFO] [1792636538.223223570] [corr_sub_2]: corr_sub: node=corr_sub_2 topic=/corr/a payload=t1k1 stamp=1 seq=2
+[CorrBringup-1] [INFO] [1792636538.420109572] [corr_publisher]: corr_pub: tick=2 topic=/corr/a payload=t2k1 origin=timer
+[CorrBringup-1] [INFO] [1792636538.420910762] [corr_sub_2]: corr_sub: node=corr_sub_2 topic=/corr/a payload=t2k1 stamp=2 seq=3
+[CorrBringup-1] [INFO] [1792636538.420896562] [corr_sub_1]: corr_sub: node=corr_sub_1 topic=/corr/a payload=t2k1 stamp=2 seq=3
+[CorrBringup-1] [INFO] [1792636538.620098004] [corr_publisher]: corr_pub: tick=3 topic=/corr/a payload=t3k1 origin=timer
+[CorrBringup-1] [INFO] [1792636538.620932205] [corr_sub_2]: corr_sub: node=corr_sub_2 topic=/corr/a payload=t3k1 stamp=3 seq=4
+[CorrBringup-1] [INFO] [1792636538.620922265] [corr_sub_1]: corr_sub: node=corr_sub_1 topic=/corr/a payload=t3k1 stamp=3 seq=4
+[CorrBringup-1] [INFO] [1792636538.820101467] [corr_publisher]: corr_pub: tick=4 topic=/corr/a payload=t4k1 origin=timer
+[CorrBringup-1] [INFO] [1792636538.820900077] [corr_sub_1]: corr_sub: node=corr_sub_1 topic=/corr/a payload=t4k1 stamp=4 seq=5
+[CorrBringup-1] [INFO] [1792636538.821172147] [corr_sub_2]: corr_sub: node=corr_sub_2 topic=/corr/a payload=t4k1 stamp=4 seq=5
+[CorrBringup-1] [INFO] [1792636539.020088239] [corr_publisher]: corr_pub: tick=5 topic=/corr/a payload=t5k1 origin=timer
+[CorrBringup-1] [INFO] [1792636539.020891239] [corr_sub_1]: corr_sub: node=corr_sub_1 topic=/corr/a payload=t5k1 stamp=5 seq=6
+[CorrBringup-1] [INFO] [1792636539.020905999] [corr_sub_2]: corr_sub: node=corr_sub_2 topic=/corr/a payload=t5k1 stamp=5 seq=6
+[CorrBringup-1] [INFO] [1792636539.220089941] [corr_publisher]: corr_pub: tick=6 topic=/corr/a payload=t6k1 origin=timer
+[CorrBringup-1] [INFO] [1792636539.220929611] [corr_sub_1]: corr_sub: node=corr_sub_1 topic=/corr/a payload=t6k1 stamp=6 seq=7
+[CorrBringup-1] [INFO] [1792636539.220913921] [corr_sub_2]: corr_sub: node=corr_sub_2 topic=/corr/a payload=t6k1 stamp=6 seq=7
+[CorrBringup-1] [INFO] [1792636539.420110024] [corr_publisher]: corr_pub: tick=7 topic=/corr/a payload=t7k1 origin=timer
+[CorrBringup-1] [INFO] [1792636539.420907583] [corr_sub_2]: corr_sub: node=corr_sub_2 topic=/corr/a payload=t7k1 stamp=7 seq=8
+[CorrBringup-1] [INFO] [1792636539.420897693] [corr_sub_1]: corr_sub: node=corr_sub_1 topic=/corr/a payload=t7k1 stamp=7 seq=8
+[CorrBringup-1] [INFO] [1792636539.620063186] [corr_publisher]: corr_pub: tick=8 topic=/corr/a payload=t8k1 origin=timer
+[CorrBringup-1] [INFO] [1792636539.620931156] [corr_sub_2]: corr_sub: node=corr_sub_2 topic=/corr/a payload=t8k1 stamp=8 seq=9
+[CorrBringup-1] [INFO] [1792636539.620913666] [corr_sub_1]: corr_sub: node=corr_sub_1 topic=/corr/a payload=t8k1 stamp=8 seq=9
+[CorrBringup-1] [INFO] [1792636539.820585408] [corr_publisher]: corr_pub: tick=9 topic=/corr/a payload=t9k1 origin=timer
+[CorrBringup-1] [INFO] [1792636539.820945638] [corr_sub_2]: corr_sub: node=corr_sub_2 topic=/corr/a payload=t9k1 stamp=9 seq=10
+[CorrBringup-1] [INFO] [1792636539.820922698] [corr_sub_1]: corr_sub: node=corr_sub_1 topic=/corr/a payload=t9k1 stamp=9 seq=10
+[CorrBringup-1] [INFO] [1792636540.020054230] [corr_publisher]: corr_pub: tick=10 topic=/corr/a payload=t10k1 origin=timer
+[CorrBringup-1] [INFO] [1792636540.020926770] [corr_sub_1]: corr_sub: node=corr_sub_1 topic=/corr/a payload=t10k1 stamp=10 seq=11
+[CorrBringup-1] [INFO] [1792636540.021031890] [corr_sub_2]: corr_sub: node=corr_sub_2 topic=/corr/a payload=t10k1 stamp=10 seq=11

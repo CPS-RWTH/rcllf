@@ -1,0 +1,11 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# Expectations below were derived by hand.
+# TO1 timeout: input 1 silent, REJECTED(timeout) at the deadline tag (101 + 47, 0).
+params epoch=1 delta=10 lateness=0,0 capacity=8,8 retention=1000 timeout=47
+admit 0 100 1:a:1 @101
+wake @148
+admit 0 200 1:a:2 @201
+close shutdown @220
+expect D 1:a:1 REJECTED(timeout) @148
+expect D 1:a:2 REJECTED(shutdown) @220

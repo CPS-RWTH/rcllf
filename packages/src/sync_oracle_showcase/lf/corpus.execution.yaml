@@ -1,0 +1,9 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# rcllf execution config for launch/corpus.launch.py. The player's
+# tick callback publishes every row of a tick in a loop, so its burst bound is
+# declared: 4 is the smallest bound that holds B8 and F1 (and P3's 4 rows per
+# tick); corpus N1 crosses it on purpose.
+nodes:
+  corpus_player:
+    max_publishes_per_invocation: 4

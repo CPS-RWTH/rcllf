@@ -1,0 +1,6 @@
+{"ev":"config","domain":"mf-sync/1","policy":"exact","queue":1,"message_filters":"4.11.17-1noble.20260912.163757","rclcpp":"28.1.22-1noble.20260911.105434","corpus":"fnv1a64:d19c9fa9c4e8687a","impl":"header"}
+{"ev":"drop","seq":0,"stamp_ns":10000000,"slots":[{"input":0,"row":0,"payload":1},null]}
+{"ev":"drop","seq":1,"stamp_ns":20000000,"slots":[{"input":0,"row":1,"payload":2},null]}
+{"ev":"drop","seq":2,"stamp_ns":30000000,"slots":[{"input":0,"row":2,"payload":3},null]}
+{"ev":"drop","seq":3,"stamp_ns":40000000,"slots":[{"input":0,"row":3,"payload":4},null]}
+{"ev":"drop","seq":4,"stamp_ns":10000000,"slots":[null,{"input":1,"row":5,"payload":9}]}

@@ -1,0 +1,3 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+"""Feature/hazard-detection modules. Each imports and calls ``registry.register``."""

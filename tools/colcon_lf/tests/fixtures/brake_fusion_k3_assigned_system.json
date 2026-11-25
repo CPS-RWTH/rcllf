@@ -1,0 +1,2779 @@
+{
+  "name": "k3_assigned",
+  "launch_graph": {
+    "root": {
+      "file_path": "/workspace/packages/src/brake_fusion/launch/k3_assigned.launch.py",
+      "package": "brake_fusion",
+      "arguments": [
+        {
+          "name": "stamp_origin_ns",
+          "default_value": "0",
+          "description": "no description given",
+          "choices": null
+        }
+      ],
+      "nodes": [],
+      "includes": [
+        {
+          "file_path": "/workspace/packages/install/brake_fusion/share/brake_fusion/launch/k0_separate.launch.py",
+          "package": "brake_fusion",
+          "arguments": [
+            {
+              "name": "stamp_mode",
+              "default_value": "assigned_shared",
+              "description": "no description given",
+              "choices": null
+            },
+            {
+              "name": "stamp_origin_ns",
+              "default_value": "0",
+              "description": "no description given",
+              "choices": null
+            },
+            {
+              "name": "sync_policy",
+              "default_value": "exact",
+              "description": "no description given",
+              "choices": null
+            },
+            {
+              "name": "queue_size",
+              "default_value": "10",
+              "description": "no description given",
+              "choices": null
+            },
+            {
+              "name": "use_sim_time",
+              "default_value": "false",
+              "description": "no description given",
+              "choices": null
+            },
+            {
+              "name": "publish_clock",
+              "default_value": "false",
+              "description": "no description given",
+              "choices": null
+            },
+            {
+              "name": "steps_per_tick",
+              "default_value": "1",
+              "description": "no description given",
+              "choices": null
+            },
+            {
+              "name": "detection_work_us",
+              "default_value": "3000",
+              "description": "no description given",
+              "choices": null
+            },
+            {
+              "name": "detection_work_mode",
+              "default_value": "fixed",
+              "description": "no description given",
+              "choices": null
+            },
+            {
+              "name": "start_at_ns",
+              "default_value": "0",
+              "description": "no description given",
+              "choices": null
+            },
+            {
+              "name": "log_inputs",
+              "default_value": "false",
+              "description": "no description given",
+              "choices": null
+            },
+            {
+              "name": "sample_mode",
+              "default_value": "latest",
+              "description": "no description given",
+              "choices": null
+            },
+            {
+              "name": "grid_origin_ns",
+              "default_value": "0",
+              "description": "no description given",
+              "choices": null
+            },
+            {
+              "name": "input_wait_ms",
+              "default_value": "10",
+              "description": "no description given",
+              "choices": null
+            }
+          ],
+          "nodes": [
+            {
+              "package": "brake_fusion",
+              "executable": "simulator_node",
+              "name": "simulator",
+              "namespace": null,
+              "parameters": {
+                "use_sim_time": false,
+                "publish_clock": false,
+                "steps_per_tick": 1,
+                "start_at_ns": 0,
+                "grid_origin_ns": 0
+              },
+              "parameter_files": [],
+              "parameter_sources": [
+                {
+                  "params": {
+                    "use_sim_time": false,
+                    "publish_clock": false,
+                    "steps_per_tick": 1,
+                    "start_at_ns": 0,
+                    "grid_origin_ns": 0
+                  },
+                  "key": "/**"
+                }
+              ],
+              "remappings": [],
+              "condition": null,
+              "condition_result": true,
+              "is_component": false,
+              "composable_container": null,
+              "environment": {},
+              "output": "screen",
+              "respawn": false,
+              "respawn_delay": null,
+              "arguments": []
+            },
+            {
+              "package": "brake_fusion",
+              "executable": "radar_node",
+              "name": "radar",
+              "namespace": null,
+              "parameters": {
+                "use_sim_time": false,
+                "stamp_mode": "assigned_shared",
+                "stamp_origin_ns": 0,
+                "sample_mode": "latest"
+              },
+              "parameter_files": [],
+              "parameter_sources": [
+                {
+                  "params": {
+                    "use_sim_time": false,
+                    "stamp_mode": "assigned_shared",
+                    "stamp_origin_ns": 0,
+                    "sample_mode": "latest"
+                  },
+                  "key": "/**"
+                }
+              ],
+              "remappings": [],
+              "condition": null,
+              "condition_result": true,
+              "is_component": false,
+              "composable_container": null,
+              "environment": {},
+              "output": "screen",
+              "respawn": false,
+              "respawn_delay": null,
+              "arguments": []
+            },
+            {
+              "package": "brake_fusion",
+              "executable": "camera_node",
+              "name": "camera",
+              "namespace": null,
+              "parameters": {
+                "use_sim_time": false,
+                "stamp_mode": "assigned_shared",
+                "stamp_origin_ns": 0,
+                "sample_mode": "latest",
+                "detection_work_us": 3000,
+                "detection_work_mode": "fixed"
+              },
+              "parameter_files": [],
+              "parameter_sources": [
+                {
+                  "params": {
+                    "use_sim_time": false,
+                    "stamp_mode": "assigned_shared",
+                    "stamp_origin_ns": 0,
+                    "sample_mode": "latest",
+                    "detection_work_us": 3000,
+                    "detection_work_mode": "fixed"
+                  },
+                  "key": "/**"
+                }
+              ],
+              "remappings": [],
+              "condition": null,
+              "condition_result": true,
+              "is_component": false,
+              "composable_container": null,
+              "environment": {},
+              "output": "screen",
+              "respawn": false,
+              "respawn_delay": null,
+              "arguments": []
+            },
+            {
+              "package": "brake_fusion",
+              "executable": "wheel_speed_node",
+              "name": "wheel_speed",
+              "namespace": null,
+              "parameters": {
+                "use_sim_time": false,
+                "stamp_mode": "assigned_shared",
+                "stamp_origin_ns": 0,
+                "sample_mode": "latest"
+              },
+              "parameter_files": [],
+              "parameter_sources": [
+                {
+                  "params": {
+                    "use_sim_time": false,
+                    "stamp_mode": "assigned_shared",
+                    "stamp_origin_ns": 0,
+                    "sample_mode": "latest"
+                  },
+                  "key": "/**"
+                }
+              ],
+              "remappings": [],
+              "condition": null,
+              "condition_result": true,
+              "is_component": false,
+              "composable_container": null,
+              "environment": {},
+              "output": "screen",
+              "respawn": false,
+              "respawn_delay": null,
+              "arguments": []
+            },
+            {
+              "package": "brake_fusion",
+              "executable": "exact_fusion_node",
+              "name": "fusion",
+              "namespace": null,
+              "parameters": {
+                "use_sim_time": false,
+                "queue_size": 10
+              },
+              "parameter_files": [],
+              "parameter_sources": [
+                {
+                  "params": {
+                    "use_sim_time": false,
+                    "queue_size": 10
+                  },
+                  "key": "/**"
+                }
+              ],
+              "remappings": [],
+              "condition": "<launch.conditions.launch_configuration_equals.LaunchConfigurationEquals object at 0x7c78dc57be60>",
+              "condition_result": true,
+              "is_component": false,
+              "composable_container": null,
+              "environment": {},
+              "output": "screen",
+              "respawn": false,
+              "respawn_delay": null,
+              "arguments": []
+            },
+            {
+              "package": "brake_fusion",
+              "executable": "controller_node",
+              "name": "controller",
+              "namespace": null,
+              "parameters": {
+                "use_sim_time": false,
+                "log_inputs": false,
+                "grid_origin_ns": 0,
+                "input_wait_ms": 10
+              },
+              "parameter_files": [],
+              "parameter_sources": [
+                {
+                  "params": {
+                    "use_sim_time": false,
+                    "log_inputs": false,
+                    "grid_origin_ns": 0,
+                    "input_wait_ms": 10
+                  },
+                  "key": "/**"
+                }
+              ],
+              "remappings": [],
+              "condition": null,
+              "condition_result": true,
+              "is_component": false,
+              "composable_container": null,
+              "environment": {},
+              "output": "screen",
+              "respawn": false,
+              "respawn_delay": null,
+              "arguments": []
+            }
+          ],
+          "includes": [],
+          "groups": [],
+          "errors": [],
+          "set_parameters": [],
+          "set_environment": [],
+          "set_configurations": [],
+          "execute_processes": []
+        }
+      ],
+      "groups": [],
+      "errors": [],
+      "set_parameters": [],
+      "set_environment": [],
+      "set_configurations": [],
+      "execute_processes": []
+    },
+    "all_nodes": [
+      {
+        "package": "brake_fusion",
+        "executable": "simulator_node",
+        "name": "simulator",
+        "namespace": null,
+        "parameters": {
+          "use_sim_time": false,
+          "publish_clock": false,
+          "steps_per_tick": 1,
+          "start_at_ns": 0,
+          "grid_origin_ns": 0
+        },
+        "parameter_files": [],
+        "parameter_sources": [
+          {
+            "params": {
+              "use_sim_time": false,
+              "publish_clock": false,
+              "steps_per_tick": 1,
+              "start_at_ns": 0,
+              "grid_origin_ns": 0
+            },
+            "key": "/**"
+          }
+        ],
+        "remappings": [],
+        "condition": null,
+        "condition_result": true,
+        "is_component": false,
+        "composable_container": null,
+        "environment": {},
+        "output": "screen",
+        "respawn": false,
+        "respawn_delay": null,
+        "arguments": []
+      },
+      {
+        "package": "brake_fusion",
+        "executable": "radar_node",
+        "name": "radar",
+        "namespace": null,
+        "parameters": {
+          "use_sim_time": false,
+          "stamp_mode": "assigned_shared",
+          "stamp_origin_ns": 0,
+          "sample_mode": "latest"
+        },
+        "parameter_files": [],
+        "parameter_sources": [
+          {
+            "params": {
+              "use_sim_time": false,
+              "stamp_mode": "assigned_shared",
+              "stamp_origin_ns": 0,
+              "sample_mode": "latest"
+            },
+            "key": "/**"
+          }
+        ],
+        "remappings": [],
+        "condition": null,
+        "condition_result": true,
+        "is_component": false,
+        "composable_container": null,
+        "environment": {},
+        "output": "screen",
+        "respawn": false,
+        "respawn_delay": null,
+        "arguments": []
+      },
+      {
+        "package": "brake_fusion",
+        "executable": "camera_node",
+        "name": "camera",
+        "namespace": null,
+        "parameters": {
+          "use_sim_time": false,
+          "stamp_mode": "assigned_shared",
+          "stamp_origin_ns": 0,
+          "sample_mode": "latest",
+          "detection_work_us": 3000,
+          "detection_work_mode": "fixed"
+        },
+        "parameter_files": [],
+        "parameter_sources": [
+          {
+            "params": {
+              "use_sim_time": false,
+              "stamp_mode": "assigned_shared",
+              "stamp_origin_ns": 0,
+              "sample_mode": "latest",
+              "detection_work_us": 3000,
+              "detection_work_mode": "fixed"
+            },
+            "key": "/**"
+          }
+        ],
+        "remappings": [],
+        "condition": null,
+        "condition_result": true,
+        "is_component": false,
+        "composable_container": null,
+        "environment": {},
+        "output": "screen",
+        "respawn": false,
+        "respawn_delay": null,
+        "arguments": []
+      },
+      {
+        "package": "brake_fusion",
+        "executable": "wheel_speed_node",
+        "name": "wheel_speed",
+        "namespace": null,
+        "parameters": {
+          "use_sim_time": false,
+          "stamp_mode": "assigned_shared",
+          "stamp_origin_ns": 0,
+          "sample_mode": "latest"
+        },
+        "parameter_files": [],
+        "parameter_sources": [
+          {
+            "params": {
+              "use_sim_time": false,
+              "stamp_mode": "assigned_shared",
+              "stamp_origin_ns": 0,
+              "sample_mode": "latest"
+            },
+            "key": "/**"
+          }
+        ],
+        "remappings": [],
+        "condition": null,
+        "condition_result": true,
+        "is_component": false,
+        "composable_container": null,
+        "environment": {},
+        "output": "screen",
+        "respawn": false,
+        "respawn_delay": null,
+        "arguments": []
+      },
+      {
+        "package": "brake_fusion",
+        "executable": "exact_fusion_node",
+        "name": "fusion",
+        "namespace": null,
+        "parameters": {
+          "use_sim_time": false,
+          "queue_size": 10
+        },
+        "parameter_files": [],
+        "parameter_sources": [
+          {
+            "params": {
+              "use_sim_time": false,
+              "queue_size": 10
+            },
+            "key": "/**"
+          }
+        ],
+        "remappings": [],
+        "condition": "<launch.conditions.launch_configuration_equals.LaunchConfigurationEquals object at 0x7c78dc57be60>",
+        "condition_result": true,
+        "is_component": false,
+        "composable_container": null,
+        "environment": {},
+        "output": "screen",
+        "respawn": false,
+        "respawn_delay": null,
+        "arguments": []
+      },
+      {
+        "package": "brake_fusion",
+        "executable": "controller_node",
+        "name": "controller",
+        "namespace": null,
+        "parameters": {
+          "use_sim_time": false,
+          "log_inputs": false,
+          "grid_origin_ns": 0,
+          "input_wait_ms": 10
+        },
+        "parameter_files": [],
+        "parameter_sources": [
+          {
+            "params": {
+              "use_sim_time": false,
+              "log_inputs": false,
+              "grid_origin_ns": 0,
+              "input_wait_ms": 10
+            },
+            "key": "/**"
+          }
+        ],
+        "remappings": [],
+        "condition": null,
+        "condition_result": true,
+        "is_component": false,
+        "composable_container": null,
+        "environment": {},
+        "output": "screen",
+        "respawn": false,
+        "respawn_delay": null,
+        "arguments": []
+      }
+    ],
+    "context": {
+      "parameters": {},
+      "environment": {},
+      "launch_configurations": {}
+    }
+  },
+  "nodes": {
+    "simulator": {
+      "name": "simulator",
+      "class_name": "SimulatorNode",
+      "package": "brake_fusion",
+      "source_file": "/workspace/packages/src/brake_fusion/src/simulator_node.cpp",
+      "header_file": "/workspace/packages/src/brake_fusion/include/brake_fusion/simulator_node.hpp",
+      "base_class": "rclcpp::Node",
+      "is_component": true,
+      "qualified_name": "brake_fusion::SimulatorNode",
+      "callbacks": [
+        {
+          "name": "brake_callback",
+          "parameters": [
+            {
+              "name": "msg",
+              "type": "const std_msgs::msg::Float64_<std::allocator<void>> &"
+            }
+          ],
+          "publishers_used": [],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "grid_origin_ns_",
+            "log_",
+            "step_"
+          ],
+          "variables_written": [
+            "brake_",
+            "brake_msgs_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {},
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "<used, not called, in <constructor>>"
+          ]
+        },
+        {
+          "name": "clock_msg",
+          "parameters": [],
+          "publishers_used": [],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "step_"
+          ],
+          "variables_written": [],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {},
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "publish_state",
+            "step_callback"
+          ]
+        },
+        {
+          "name": "state_msg",
+          "parameters": [
+            {
+              "name": "stamp_ns",
+              "type": "long"
+            }
+          ],
+          "publishers_used": [],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "position_",
+            "publish_clock_",
+            "step_",
+            "velocity_"
+          ],
+          "variables_written": [],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {},
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "publish_state",
+            "step_callback"
+          ]
+        },
+        {
+          "name": "publish_state",
+          "parameters": [
+            {
+              "name": "stamp_ns",
+              "type": "long"
+            }
+          ],
+          "publishers_used": [
+            "/clock",
+            "/sim/state"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "publish_clock_"
+          ],
+          "variables_written": [],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/clock": 1,
+            "/sim/state": 1
+          },
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "grid_step_callback"
+          ]
+        },
+        {
+          "name": "grid_step_callback",
+          "parameters": [],
+          "publishers_used": [
+            "/clock",
+            "/sim/state"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "brake_sub_",
+            "expected_state_subscribers_",
+            "grid_origin_ns_",
+            "log_",
+            "max_steps_",
+            "position_",
+            "step_",
+            "timer_",
+            "velocity_"
+          ],
+          "variables_written": [
+            "started_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/clock": null,
+            "/sim/state": null
+          },
+          "publish_unbounded": {
+            "/clock": "loop at line 170 (through publish_state)",
+            "/sim/state": "loop at line 170 (through publish_state)"
+          },
+          "missing_handler_publishers": [],
+          "callers": [
+            "step_callback"
+          ]
+        },
+        {
+          "name": "step_callback",
+          "parameters": [],
+          "publishers_used": [
+            "/clock",
+            "/sim/state"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "brake_sub_",
+            "expected_state_subscribers_",
+            "grid_origin_ns_",
+            "log_",
+            "max_steps_",
+            "position_",
+            "publish_clock_",
+            "start_at_ns_",
+            "step_",
+            "steps_per_tick_",
+            "velocity_"
+          ],
+          "variables_written": [
+            "started_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/clock": null,
+            "/sim/state": null
+          },
+          "publish_unbounded": {
+            "/clock": "loop at line 170 (through publish_state)",
+            "/sim/state": "loop at line 170 (through publish_state)"
+          },
+          "missing_handler_publishers": [],
+          "callers": [
+            "<used, not called, in <constructor>>"
+          ]
+        },
+        {
+          "name": "integrate_step",
+          "parameters": [],
+          "publishers_used": [],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "brake_",
+            "brake_msgs_",
+            "log_",
+            "max_decel_",
+            "mujoco_"
+          ],
+          "variables_written": [
+            "applied_brake_",
+            "position_",
+            "step_",
+            "velocity_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {},
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "grid_step_callback",
+            "step_callback"
+          ]
+        },
+        {
+          "name": "after_step",
+          "parameters": [],
+          "publishers_used": [],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "log_",
+            "max_steps_",
+            "obstacle_distance_",
+            "position_",
+            "step_",
+            "velocity_"
+          ],
+          "variables_written": [
+            "stopped_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {},
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "grid_step_callback",
+            "step_callback"
+          ]
+        }
+      ],
+      "callback_groups": [
+        {
+          "name": "default_group",
+          "type": "MutuallyExclusive"
+        }
+      ],
+      "timers": [
+        {
+          "period_ms": 1.0,
+          "callback": "step_callback",
+          "callback_group": "default_group",
+          "member_variable": "timer_",
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "offset_ms": 0.0,
+          "callback_expr": null
+        }
+      ],
+      "subscribers": [
+        {
+          "topic": "/brake_cmd",
+          "message_type": "std_msgs::msg::Float64",
+          "callback": "brake_callback",
+          "qos_depth": 10,
+          "callback_group": "default_group",
+          "member_variable": "brake_sub_",
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "qos_reliability": "best_effort",
+          "qos_durability": "volatile",
+          "qos_history": "keep_last",
+          "qos_deadline_ms": null,
+          "topic_dynamic": false,
+          "topic_param": null,
+          "callback_expr": null,
+          "sync_callback": null
+        }
+      ],
+      "service_servers": [],
+      "action_servers": [],
+      "publishers": [
+        {
+          "topic": "/sim/state",
+          "message_type": "nav_msgs::msg::Odometry",
+          "qos_depth": 10,
+          "member_variable": "state_pub_",
+          "is_lifecycle": false,
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "qos_reliability": "reliable",
+          "qos_durability": "volatile",
+          "qos_history": "keep_last",
+          "qos_deadline_ms": null,
+          "topic_dynamic": false,
+          "topic_param": null,
+          "serialized_publish": false,
+          "unconditional": false
+        },
+        {
+          "topic": "/clock",
+          "message_type": "rosgraph_msgs::msg::Clock",
+          "qos_depth": 10,
+          "member_variable": "clock_pub_",
+          "is_lifecycle": false,
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "qos_reliability": "reliable",
+          "qos_durability": "volatile",
+          "qos_history": "keep_last",
+          "qos_deadline_ms": null,
+          "topic_dynamic": false,
+          "topic_param": null,
+          "serialized_publish": false,
+          "unconditional": false
+        }
+      ],
+      "service_clients": [],
+      "action_clients": [],
+      "parameters": [
+        {
+          "name": "obstacle_distance",
+          "type": "double",
+          "default_value": 40.0,
+          "description": null
+        },
+        {
+          "name": "initial_velocity",
+          "type": "double",
+          "default_value": 15.0,
+          "description": null
+        },
+        {
+          "name": "max_decel",
+          "type": "double",
+          "default_value": 8.0,
+          "description": null
+        },
+        {
+          "name": "publish_clock",
+          "type": "bool",
+          "default_value": false,
+          "description": null
+        },
+        {
+          "name": "steps_per_tick",
+          "type": "int64_t",
+          "default_value": 1,
+          "description": null
+        },
+        {
+          "name": "expected_state_subscribers",
+          "type": "int64_t",
+          "default_value": 3,
+          "description": null
+        },
+        {
+          "name": "max_steps",
+          "type": "int64_t",
+          "default_value": 20000,
+          "description": null
+        },
+        {
+          "name": "start_at_ns",
+          "type": "int64_t",
+          "default_value": 0,
+          "description": null
+        },
+        {
+          "name": "grid_origin_ns",
+          "type": "int64_t",
+          "default_value": 0,
+          "description": null
+        },
+        {
+          "name": "plant",
+          "type": "string",
+          "default_value": 0,
+          "description": null
+        },
+        {
+          "name": "log_dir",
+          "type": "string",
+          "default_value": "",
+          "description": null
+        },
+        {
+          "name": "use_sim_time",
+          "type": "bool",
+          "default_value": false,
+          "description": null
+        }
+      ],
+      "member_variables": [
+        "state_pub_",
+        "clock_pub_",
+        "brake_sub_",
+        "timer_",
+        "log_",
+        "mujoco_",
+        "obstacle_distance_",
+        "max_decel_",
+        "publish_clock_",
+        "steps_per_tick_",
+        "expected_state_subscribers_",
+        "start_at_ns_",
+        "grid_origin_ns_",
+        "max_steps_",
+        "plant_",
+        "position_",
+        "velocity_",
+        "brake_",
+        "applied_brake_",
+        "brake_msgs_",
+        "step_",
+        "started_",
+        "stopped_"
+      ],
+      "lifecycle_callbacks": [],
+      "lifecycle_hooks_not_chained": [],
+      "has_param_callback": false,
+      "param_callback": null,
+      "parse_warnings": [],
+      "unresolved_includes": [],
+      "detected_includes": [],
+      "detected_take_calls": [],
+      "detected_ros_sleep_calls": [],
+      "message_filters": null,
+      "unbound_timers": [],
+      "thread_action_senders": []
+    },
+    "radar": {
+      "name": "radar",
+      "class_name": "RadarNode",
+      "package": "brake_fusion",
+      "source_file": "/workspace/packages/src/brake_fusion/src/radar_node.cpp",
+      "header_file": "/workspace/packages/src/brake_fusion/include/brake_fusion/radar_node.hpp",
+      "base_class": "rclcpp::Node",
+      "is_component": true,
+      "qualified_name": "brake_fusion::RadarNode",
+      "callbacks": [
+        {
+          "name": "state_callback",
+          "parameters": [
+            {
+              "name": "msg",
+              "type": "const nav_msgs::msg::Odometry_<std::allocator<void>> &"
+            }
+          ],
+          "publishers_used": [
+            "/radar/range"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "grid_",
+            "sampler_"
+          ],
+          "variables_written": [
+            "have_state_",
+            "position_",
+            "state_stamp_ns_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/radar/range": 1
+          },
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "<used, not called, in <constructor>>"
+          ]
+        },
+        {
+          "name": "timer_callback",
+          "parameters": [],
+          "publishers_used": [
+            "/radar/range"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "grid_",
+            "have_state_",
+            "log_",
+            "obstacle_distance_",
+            "period_ns_",
+            "position_",
+            "stamper_",
+            "state_stamp_ns_",
+            "timer_"
+          ],
+          "variables_written": [
+            "pending_stamp_ns_",
+            "pending_tick_",
+            "release_ns_",
+            "seq_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/radar/range": 2
+          },
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "<used, not called, in <constructor>>"
+          ]
+        },
+        {
+          "name": "serve_pending",
+          "parameters": [],
+          "publishers_used": [
+            "/radar/range"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "log_",
+            "obstacle_distance_",
+            "pending_stamp_ns_",
+            "release_ns_",
+            "sampler_",
+            "stamper_"
+          ],
+          "variables_written": [
+            "pending_tick_",
+            "seq_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/radar/range": 1
+          },
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "state_callback",
+            "timer_callback"
+          ]
+        }
+      ],
+      "callback_groups": [
+        {
+          "name": "default_group",
+          "type": "MutuallyExclusive"
+        }
+      ],
+      "timers": [
+        {
+          "period_ms": 20.0,
+          "callback": "timer_callback",
+          "callback_group": "default_group",
+          "member_variable": "timer_",
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "offset_ms": 0.0,
+          "callback_expr": null
+        }
+      ],
+      "subscribers": [
+        {
+          "topic": "/sim/state",
+          "message_type": "nav_msgs::msg::Odometry",
+          "callback": "state_callback",
+          "qos_depth": 10,
+          "callback_group": "default_group",
+          "member_variable": "state_sub_",
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "qos_reliability": "reliable",
+          "qos_durability": "volatile",
+          "qos_history": "keep_last",
+          "qos_deadline_ms": null,
+          "topic_dynamic": false,
+          "topic_param": null,
+          "callback_expr": null,
+          "sync_callback": null
+        }
+      ],
+      "service_servers": [],
+      "action_servers": [],
+      "publishers": [
+        {
+          "topic": "/radar/range",
+          "message_type": "sensor_msgs::msg::Range",
+          "qos_depth": 10,
+          "member_variable": "range_pub_",
+          "is_lifecycle": false,
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "qos_reliability": "best_effort",
+          "qos_durability": "volatile",
+          "qos_history": "keep_last",
+          "qos_deadline_ms": null,
+          "topic_dynamic": false,
+          "topic_param": null,
+          "serialized_publish": false,
+          "unconditional": false
+        }
+      ],
+      "service_clients": [],
+      "action_clients": [],
+      "parameters": [
+        {
+          "name": "obstacle_distance",
+          "type": "double",
+          "default_value": 40.0,
+          "description": null
+        },
+        {
+          "name": "stamp_mode",
+          "type": "string",
+          "default_value": "assigned_shared",
+          "description": null
+        },
+        {
+          "name": "stamp_origin_ns",
+          "type": "int64_t",
+          "default_value": 0,
+          "description": null
+        },
+        {
+          "name": "sample_mode",
+          "type": "string",
+          "default_value": "latest",
+          "description": null
+        },
+        {
+          "name": "log_dir",
+          "type": "string",
+          "default_value": "",
+          "description": null
+        },
+        {
+          "name": "use_sim_time",
+          "type": "bool",
+          "default_value": false,
+          "description": null
+        }
+      ],
+      "member_variables": [
+        "state_sub_",
+        "range_pub_",
+        "timer_",
+        "stamper_",
+        "log_",
+        "obstacle_distance_",
+        "have_state_",
+        "state_stamp_ns_",
+        "position_",
+        "seq_",
+        "grid_",
+        "period_ns_",
+        "sampler_",
+        "pending_tick_",
+        "pending_stamp_ns_",
+        "release_ns_"
+      ],
+      "lifecycle_callbacks": [],
+      "lifecycle_hooks_not_chained": [],
+      "has_param_callback": false,
+      "param_callback": null,
+      "parse_warnings": [],
+      "unresolved_includes": [],
+      "detected_includes": [],
+      "detected_take_calls": [],
+      "detected_ros_sleep_calls": [],
+      "message_filters": null,
+      "unbound_timers": [],
+      "thread_action_senders": []
+    },
+    "camera": {
+      "name": "camera",
+      "class_name": "CameraNode",
+      "package": "brake_fusion",
+      "source_file": "/workspace/packages/src/brake_fusion/src/camera_node.cpp",
+      "header_file": "/workspace/packages/src/brake_fusion/include/brake_fusion/camera_node.hpp",
+      "base_class": "rclcpp::Node",
+      "is_component": true,
+      "qualified_name": "brake_fusion::CameraNode",
+      "callbacks": [
+        {
+          "name": "state_callback",
+          "parameters": [
+            {
+              "name": "msg",
+              "type": "const nav_msgs::msg::Odometry_<std::allocator<void>> &"
+            }
+          ],
+          "publishers_used": [
+            "/camera/range"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "grid_",
+            "sampler_"
+          ],
+          "variables_written": [
+            "have_state_",
+            "position_",
+            "state_stamp_ns_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/camera/range": 1
+          },
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "<used, not called, in <constructor>>"
+          ]
+        },
+        {
+          "name": "timer_callback",
+          "parameters": [],
+          "publishers_used": [
+            "/camera/range"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "data_dependent_work_",
+            "detection_work_us_",
+            "grid_",
+            "have_state_",
+            "log_",
+            "obstacle_distance_",
+            "period_ns_",
+            "position_",
+            "stamper_",
+            "state_stamp_ns_",
+            "timer_"
+          ],
+          "variables_written": [
+            "pending_stamp_ns_",
+            "pending_tick_",
+            "release_ns_",
+            "seq_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/camera/range": 2
+          },
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "<used, not called, in <constructor>>"
+          ]
+        },
+        {
+          "name": "serve_pending",
+          "parameters": [],
+          "publishers_used": [
+            "/camera/range"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "data_dependent_work_",
+            "detection_work_us_",
+            "log_",
+            "obstacle_distance_",
+            "pending_stamp_ns_",
+            "release_ns_",
+            "sampler_",
+            "stamper_"
+          ],
+          "variables_written": [
+            "pending_tick_",
+            "seq_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/camera/range": 1
+          },
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "state_callback",
+            "timer_callback"
+          ]
+        }
+      ],
+      "callback_groups": [
+        {
+          "name": "default_group",
+          "type": "MutuallyExclusive"
+        }
+      ],
+      "timers": [
+        {
+          "period_ms": 30.0,
+          "callback": "timer_callback",
+          "callback_group": "default_group",
+          "member_variable": "timer_",
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "offset_ms": 0.0,
+          "callback_expr": null
+        }
+      ],
+      "subscribers": [
+        {
+          "topic": "/sim/state",
+          "message_type": "nav_msgs::msg::Odometry",
+          "callback": "state_callback",
+          "qos_depth": 10,
+          "callback_group": "default_group",
+          "member_variable": "state_sub_",
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "qos_reliability": "reliable",
+          "qos_durability": "volatile",
+          "qos_history": "keep_last",
+          "qos_deadline_ms": null,
+          "topic_dynamic": false,
+          "topic_param": null,
+          "callback_expr": null,
+          "sync_callback": null
+        }
+      ],
+      "service_servers": [],
+      "action_servers": [],
+      "publishers": [
+        {
+          "topic": "/camera/range",
+          "message_type": "sensor_msgs::msg::Range",
+          "qos_depth": 10,
+          "member_variable": "range_pub_",
+          "is_lifecycle": false,
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "qos_reliability": "reliable",
+          "qos_durability": "volatile",
+          "qos_history": "keep_last",
+          "qos_deadline_ms": null,
+          "topic_dynamic": false,
+          "topic_param": null,
+          "serialized_publish": false,
+          "unconditional": false
+        }
+      ],
+      "service_clients": [],
+      "action_clients": [],
+      "parameters": [
+        {
+          "name": "obstacle_distance",
+          "type": "double",
+          "default_value": 40.0,
+          "description": null
+        },
+        {
+          "name": "detection_work_us",
+          "type": "int64_t",
+          "default_value": 3000,
+          "description": null
+        },
+        {
+          "name": "detection_work_mode",
+          "type": "string",
+          "default_value": "fixed",
+          "description": null
+        },
+        {
+          "name": "stamp_mode",
+          "type": "string",
+          "default_value": "assigned_shared",
+          "description": null
+        },
+        {
+          "name": "stamp_origin_ns",
+          "type": "int64_t",
+          "default_value": 0,
+          "description": null
+        },
+        {
+          "name": "sample_mode",
+          "type": "string",
+          "default_value": "latest",
+          "description": null
+        },
+        {
+          "name": "log_dir",
+          "type": "string",
+          "default_value": "",
+          "description": null
+        },
+        {
+          "name": "use_sim_time",
+          "type": "bool",
+          "default_value": false,
+          "description": null
+        }
+      ],
+      "member_variables": [
+        "state_sub_",
+        "range_pub_",
+        "timer_",
+        "stamper_",
+        "log_",
+        "obstacle_distance_",
+        "detection_work_us_",
+        "data_dependent_work_",
+        "have_state_",
+        "state_stamp_ns_",
+        "position_",
+        "seq_",
+        "grid_",
+        "period_ns_",
+        "sampler_",
+        "pending_tick_",
+        "pending_stamp_ns_",
+        "release_ns_"
+      ],
+      "lifecycle_callbacks": [],
+      "lifecycle_hooks_not_chained": [],
+      "has_param_callback": false,
+      "param_callback": null,
+      "parse_warnings": [],
+      "unresolved_includes": [],
+      "detected_includes": [],
+      "detected_take_calls": [],
+      "detected_ros_sleep_calls": [],
+      "message_filters": null,
+      "unbound_timers": [],
+      "thread_action_senders": []
+    },
+    "wheel_speed": {
+      "name": "wheel_speed",
+      "class_name": "WheelSpeedNode",
+      "package": "brake_fusion",
+      "source_file": "/workspace/packages/src/brake_fusion/src/wheel_speed_node.cpp",
+      "header_file": "/workspace/packages/src/brake_fusion/include/brake_fusion/wheel_speed_node.hpp",
+      "base_class": "rclcpp::Node",
+      "is_component": true,
+      "qualified_name": "brake_fusion::WheelSpeedNode",
+      "callbacks": [
+        {
+          "name": "state_callback",
+          "parameters": [
+            {
+              "name": "msg",
+              "type": "const nav_msgs::msg::Odometry_<std::allocator<void>> &"
+            }
+          ],
+          "publishers_used": [
+            "/wheel/speed"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "grid_",
+            "sampler_"
+          ],
+          "variables_written": [
+            "have_state_",
+            "state_stamp_ns_",
+            "velocity_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/wheel/speed": 1
+          },
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "<used, not called, in <constructor>>"
+          ]
+        },
+        {
+          "name": "timer_callback",
+          "parameters": [],
+          "publishers_used": [
+            "/wheel/speed"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "grid_",
+            "have_state_",
+            "log_",
+            "period_ns_",
+            "stamper_",
+            "state_stamp_ns_",
+            "timer_",
+            "velocity_"
+          ],
+          "variables_written": [
+            "pending_stamp_ns_",
+            "pending_tick_",
+            "release_ns_",
+            "seq_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/wheel/speed": 2
+          },
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "<used, not called, in <constructor>>"
+          ]
+        },
+        {
+          "name": "serve_pending",
+          "parameters": [],
+          "publishers_used": [
+            "/wheel/speed"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "log_",
+            "pending_stamp_ns_",
+            "release_ns_",
+            "sampler_",
+            "stamper_"
+          ],
+          "variables_written": [
+            "pending_tick_",
+            "seq_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/wheel/speed": 1
+          },
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "state_callback",
+            "timer_callback"
+          ]
+        }
+      ],
+      "callback_groups": [
+        {
+          "name": "default_group",
+          "type": "MutuallyExclusive"
+        }
+      ],
+      "timers": [
+        {
+          "period_ms": 10.0,
+          "callback": "timer_callback",
+          "callback_group": "default_group",
+          "member_variable": "timer_",
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "offset_ms": 0.0,
+          "callback_expr": null
+        }
+      ],
+      "subscribers": [
+        {
+          "topic": "/sim/state",
+          "message_type": "nav_msgs::msg::Odometry",
+          "callback": "state_callback",
+          "qos_depth": 10,
+          "callback_group": "default_group",
+          "member_variable": "state_sub_",
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "qos_reliability": "reliable",
+          "qos_durability": "volatile",
+          "qos_history": "keep_last",
+          "qos_deadline_ms": null,
+          "topic_dynamic": false,
+          "topic_param": null,
+          "callback_expr": null,
+          "sync_callback": null
+        }
+      ],
+      "service_servers": [],
+      "action_servers": [],
+      "publishers": [
+        {
+          "topic": "/wheel/speed",
+          "message_type": "geometry_msgs::msg::TwistStamped",
+          "qos_depth": 10,
+          "member_variable": "speed_pub_",
+          "is_lifecycle": false,
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "qos_reliability": "reliable",
+          "qos_durability": "volatile",
+          "qos_history": "keep_last",
+          "qos_deadline_ms": null,
+          "topic_dynamic": false,
+          "topic_param": null,
+          "serialized_publish": false,
+          "unconditional": false
+        }
+      ],
+      "service_clients": [],
+      "action_clients": [],
+      "parameters": [
+        {
+          "name": "stamp_mode",
+          "type": "string",
+          "default_value": "assigned_shared",
+          "description": null
+        },
+        {
+          "name": "stamp_origin_ns",
+          "type": "int64_t",
+          "default_value": 0,
+          "description": null
+        },
+        {
+          "name": "sample_mode",
+          "type": "string",
+          "default_value": "latest",
+          "description": null
+        },
+        {
+          "name": "log_dir",
+          "type": "string",
+          "default_value": "",
+          "description": null
+        },
+        {
+          "name": "use_sim_time",
+          "type": "bool",
+          "default_value": false,
+          "description": null
+        }
+      ],
+      "member_variables": [
+        "state_sub_",
+        "speed_pub_",
+        "timer_",
+        "stamper_",
+        "log_",
+        "have_state_",
+        "state_stamp_ns_",
+        "velocity_",
+        "seq_",
+        "grid_",
+        "period_ns_",
+        "sampler_",
+        "pending_tick_",
+        "pending_stamp_ns_",
+        "release_ns_"
+      ],
+      "lifecycle_callbacks": [],
+      "lifecycle_hooks_not_chained": [],
+      "has_param_callback": false,
+      "param_callback": null,
+      "parse_warnings": [],
+      "unresolved_includes": [],
+      "detected_includes": [],
+      "detected_take_calls": [],
+      "detected_ros_sleep_calls": [],
+      "message_filters": null,
+      "unbound_timers": [],
+      "thread_action_senders": []
+    },
+    "fusion": {
+      "name": "fusion",
+      "class_name": "ExactFusionNode",
+      "package": "brake_fusion",
+      "source_file": "/workspace/packages/src/brake_fusion/src/exact_fusion_node.cpp",
+      "header_file": "/workspace/packages/src/brake_fusion/include/brake_fusion/exact_fusion_node.hpp",
+      "base_class": "rclcpp::Node",
+      "is_component": true,
+      "qualified_name": "brake_fusion::ExactFusionNode",
+      "callbacks": [
+        {
+          "name": "sync_callback",
+          "parameters": [
+            {
+              "name": "radar",
+              "type": "const std::shared_ptr<const sensor_msgs::msg::Range_<std::allocator<void>>> &"
+            },
+            {
+              "name": "camera",
+              "type": "const std::shared_ptr<const sensor_msgs::msg::Range_<std::allocator<void>>> &"
+            }
+          ],
+          "publishers_used": [
+            "/fused/range"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "log_"
+          ],
+          "variables_written": [
+            "pairs_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/fused/range": null
+          },
+          "publish_unbounded": {
+            "/fused/range": "the node escapes: call to subscribe at line 54 receives this"
+          },
+          "missing_handler_publishers": [],
+          "callers": [
+            "<used, not called, in <constructor>>"
+          ]
+        },
+        {
+          "name": "drop_callback",
+          "parameters": [
+            {
+              "name": "radar",
+              "type": "const std::shared_ptr<const sensor_msgs::msg::Range_<std::allocator<void>>> &"
+            },
+            {
+              "name": "camera",
+              "type": "const std::shared_ptr<const sensor_msgs::msg::Range_<std::allocator<void>>> &"
+            }
+          ],
+          "publishers_used": [],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "log_"
+          ],
+          "variables_written": [
+            "drops_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {},
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "<used, not called, in <constructor>>"
+          ]
+        },
+        {
+          "name": "sync_callback_via_radar_sub",
+          "parameters": [
+            {
+              "name": "radar",
+              "type": "const std::shared_ptr<const sensor_msgs::msg::Range_<std::allocator<void>>> &"
+            },
+            {
+              "name": "camera",
+              "type": "const std::shared_ptr<const sensor_msgs::msg::Range_<std::allocator<void>>> &"
+            }
+          ],
+          "publishers_used": [
+            "/fused/range"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "log_"
+          ],
+          "variables_written": [
+            "pairs_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/fused/range": null
+          },
+          "publish_unbounded": {
+            "/fused/range": "the node escapes: call to subscribe at line 54 receives this"
+          },
+          "missing_handler_publishers": [],
+          "callers": [
+            "<used, not called, in <constructor>>"
+          ]
+        },
+        {
+          "name": "sync_callback_via_camera_sub",
+          "parameters": [
+            {
+              "name": "radar",
+              "type": "const std::shared_ptr<const sensor_msgs::msg::Range_<std::allocator<void>>> &"
+            },
+            {
+              "name": "camera",
+              "type": "const std::shared_ptr<const sensor_msgs::msg::Range_<std::allocator<void>>> &"
+            }
+          ],
+          "publishers_used": [
+            "/fused/range"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "log_"
+          ],
+          "variables_written": [
+            "pairs_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/fused/range": null
+          },
+          "publish_unbounded": {
+            "/fused/range": "the node escapes: call to subscribe at line 54 receives this"
+          },
+          "missing_handler_publishers": [],
+          "callers": [
+            "<used, not called, in <constructor>>"
+          ]
+        }
+      ],
+      "callback_groups": [
+        {
+          "name": "default_group",
+          "type": "MutuallyExclusive"
+        }
+      ],
+      "timers": [],
+      "subscribers": [
+        {
+          "topic": "/radar/range",
+          "message_type": "sensor_msgs::msg::Range",
+          "callback": "sync_callback_via_radar_sub",
+          "qos_depth": null,
+          "callback_group": "default_group",
+          "member_variable": "radar_sub_",
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "qos_reliability": null,
+          "qos_durability": null,
+          "qos_history": null,
+          "qos_deadline_ms": null,
+          "topic_dynamic": false,
+          "topic_param": null,
+          "callback_expr": null,
+          "sync_callback": "sync_callback"
+        },
+        {
+          "topic": "/camera/range",
+          "message_type": "sensor_msgs::msg::Range",
+          "callback": "sync_callback_via_camera_sub",
+          "qos_depth": null,
+          "callback_group": "default_group",
+          "member_variable": "camera_sub_",
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "qos_reliability": null,
+          "qos_durability": null,
+          "qos_history": null,
+          "qos_deadline_ms": null,
+          "topic_dynamic": false,
+          "topic_param": null,
+          "callback_expr": null,
+          "sync_callback": "sync_callback"
+        }
+      ],
+      "service_servers": [],
+      "action_servers": [],
+      "publishers": [
+        {
+          "topic": "/fused/range",
+          "message_type": "sensor_msgs::msg::Range",
+          "qos_depth": 10,
+          "member_variable": "fused_pub_",
+          "is_lifecycle": false,
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "qos_reliability": "reliable",
+          "qos_durability": "volatile",
+          "qos_history": "keep_last",
+          "qos_deadline_ms": null,
+          "topic_dynamic": false,
+          "topic_param": null,
+          "serialized_publish": false,
+          "unconditional": true
+        }
+      ],
+      "service_clients": [],
+      "action_clients": [],
+      "parameters": [
+        {
+          "name": "queue_size",
+          "type": "int64_t",
+          "default_value": 10,
+          "description": null
+        },
+        {
+          "name": "log_dir",
+          "type": "string",
+          "default_value": "",
+          "description": null
+        },
+        {
+          "name": "use_sim_time",
+          "type": "bool",
+          "default_value": false,
+          "description": null
+        }
+      ],
+      "member_variables": [
+        "radar_sub_",
+        "camera_sub_",
+        "sync_",
+        "fused_pub_",
+        "log_",
+        "pairs_",
+        "drops_"
+      ],
+      "lifecycle_callbacks": [],
+      "lifecycle_hooks_not_chained": [],
+      "has_param_callback": false,
+      "param_callback": null,
+      "parse_warnings": [],
+      "unresolved_includes": [],
+      "detected_includes": [
+        "message_filters"
+      ],
+      "detected_take_calls": [],
+      "detected_ros_sleep_calls": [],
+      "message_filters": {
+        "synchronizers": [
+          {
+            "member_variable": "sync_",
+            "policy": "ExactTime",
+            "queue_size": null,
+            "inputs": [
+              "radar_sub_",
+              "camera_sub_"
+            ],
+            "callback": "sync_callback",
+            "bna_params": null
+          }
+        ],
+        "unsupported": []
+      },
+      "unbound_timers": [],
+      "thread_action_senders": []
+    },
+    "controller": {
+      "name": "controller",
+      "class_name": "ControllerNode",
+      "package": "brake_fusion",
+      "source_file": "/workspace/packages/src/brake_fusion/src/controller_node.cpp",
+      "header_file": "/workspace/packages/src/brake_fusion/include/brake_fusion/controller_node.hpp",
+      "base_class": "rclcpp::Node",
+      "is_component": true,
+      "qualified_name": "brake_fusion::ControllerNode",
+      "callbacks": [
+        {
+          "name": "fused_callback",
+          "parameters": [
+            {
+              "name": "msg",
+              "type": "const sensor_msgs::msg::Range_<std::allocator<void>> &"
+            }
+          ],
+          "publishers_used": [
+            "/brake_cmd"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "grid_origin_ns_",
+            "log_",
+            "log_inputs_",
+            "pending_"
+          ],
+          "variables_written": [
+            "fused_by_stamp_",
+            "fused_count_",
+            "fused_range_",
+            "fused_stamp_ns_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/brake_cmd": null
+          },
+          "publish_unbounded": {
+            "/brake_cmd": "deadline handler: options variable fused_options is initialized at line 64 from an expression the analyzer cannot follow"
+          },
+          "missing_handler_publishers": [],
+          "callers": [
+            "<used, not called, in <constructor>>"
+          ]
+        },
+        {
+          "name": "wheel_callback",
+          "parameters": [
+            {
+              "name": "msg",
+              "type": "const geometry_msgs::msg::TwistStamped_<std::allocator<void>> &"
+            }
+          ],
+          "publishers_used": [
+            "/brake_cmd"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "grid_origin_ns_",
+            "log_",
+            "log_inputs_",
+            "pending_"
+          ],
+          "variables_written": [
+            "wheel_by_stamp_",
+            "wheel_count_",
+            "wheel_speed_",
+            "wheel_stamp_ns_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/brake_cmd": 1
+          },
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "<used, not called, in <constructor>>"
+          ]
+        },
+        {
+          "name": "decide",
+          "parameters": [
+            {
+              "name": "s",
+              "type": "brake_fusion::ControllerNode::Step &"
+            }
+          ],
+          "publishers_used": [],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "partial_brake_",
+            "plausibility_tolerance_",
+            "ttc_full_",
+            "ttc_partial_"
+          ],
+          "variables_written": [
+            "held_brake_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {},
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "control_callback",
+            "try_grid_step"
+          ]
+        },
+        {
+          "name": "control_callback",
+          "parameters": [],
+          "publishers_used": [
+            "/brake_cmd"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "fused_count_",
+            "fused_range_",
+            "fused_stamp_ns_",
+            "grid_origin_ns_",
+            "log_",
+            "wheel_count_",
+            "wheel_speed_",
+            "wheel_stamp_ns_"
+          ],
+          "variables_written": [
+            "tick_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/brake_cmd": 3
+          },
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "<used, not called, in <constructor>>"
+          ]
+        },
+        {
+          "name": "grid_tick",
+          "parameters": [],
+          "publishers_used": [
+            "/brake_cmd"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "fused_period_ns_",
+            "grid_origin_ns_",
+            "timer_",
+            "wheel_period_ns_"
+          ],
+          "variables_written": [
+            "deadline_timer_",
+            "need_fused_ns_",
+            "need_wheel_ns_",
+            "pending_",
+            "pending_tick_",
+            "release_ns_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/brake_cmd": 2
+          },
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "control_callback"
+          ]
+        },
+        {
+          "name": "grid_deadline",
+          "parameters": [],
+          "publishers_used": [
+            "/brake_cmd"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "deadline_timer_",
+            "pending_"
+          ],
+          "variables_written": [],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/brake_cmd": 1
+          },
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "<used, not called, in <constructor>>"
+          ]
+        },
+        {
+          "name": "try_grid_step",
+          "parameters": [
+            {
+              "name": "deadline",
+              "type": "bool"
+            }
+          ],
+          "publishers_used": [
+            "/brake_cmd"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [
+            "deadline_timer_",
+            "fused_by_stamp_",
+            "fused_count_",
+            "grid_origin_ns_",
+            "log_",
+            "need_fused_ns_",
+            "need_wheel_ns_",
+            "pending_tick_",
+            "release_ns_",
+            "wheel_by_stamp_",
+            "wheel_count_"
+          ],
+          "variables_written": [
+            "pending_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "/brake_cmd": 1
+          },
+          "publish_unbounded": {},
+          "missing_handler_publishers": [],
+          "callers": [
+            "fused_callback",
+            "grid_deadline",
+            "grid_tick",
+            "wheel_callback"
+          ]
+        }
+      ],
+      "callback_groups": [
+        {
+          "name": "default_group",
+          "type": "MutuallyExclusive"
+        }
+      ],
+      "timers": [
+        {
+          "period_ms": 25.0,
+          "callback": "control_callback",
+          "callback_group": "default_group",
+          "member_variable": "timer_",
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "offset_ms": 0.0,
+          "callback_expr": null
+        },
+        {
+          "period_ms": null,
+          "callback": "grid_deadline",
+          "callback_group": "default_group",
+          "member_variable": "deadline_timer_",
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "offset_ms": 0.0,
+          "callback_expr": null
+        }
+      ],
+      "subscribers": [
+        {
+          "topic": "/fused/range",
+          "message_type": "sensor_msgs::msg::Range",
+          "callback": "fused_callback",
+          "qos_depth": 10,
+          "callback_group": "default_group",
+          "member_variable": "fused_sub_",
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "qos_reliability": "reliable",
+          "qos_durability": "volatile",
+          "qos_history": "keep_last",
+          "qos_deadline_ms": null,
+          "topic_dynamic": false,
+          "topic_param": null,
+          "callback_expr": null,
+          "sync_callback": null
+        },
+        {
+          "topic": "/wheel/speed",
+          "message_type": "geometry_msgs::msg::TwistStamped",
+          "callback": "wheel_callback",
+          "qos_depth": 10,
+          "callback_group": "default_group",
+          "member_variable": "wheel_sub_",
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "qos_reliability": "reliable",
+          "qos_durability": "volatile",
+          "qos_history": "keep_last",
+          "qos_deadline_ms": null,
+          "topic_dynamic": false,
+          "topic_param": null,
+          "callback_expr": null,
+          "sync_callback": null
+        }
+      ],
+      "service_servers": [],
+      "action_servers": [],
+      "publishers": [
+        {
+          "topic": "/brake_cmd",
+          "message_type": "std_msgs::msg::Float64",
+          "qos_depth": 10,
+          "member_variable": "brake_pub_",
+          "is_lifecycle": false,
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "qos_reliability": "best_effort",
+          "qos_durability": "volatile",
+          "qos_history": "keep_last",
+          "qos_deadline_ms": null,
+          "topic_dynamic": false,
+          "topic_param": null,
+          "serialized_publish": false,
+          "unconditional": true
+        }
+      ],
+      "service_clients": [],
+      "action_clients": [],
+      "parameters": [
+        {
+          "name": "ttc_full",
+          "type": "double",
+          "default_value": 1.2,
+          "description": null
+        },
+        {
+          "name": "ttc_partial",
+          "type": "double",
+          "default_value": 2.0,
+          "description": null
+        },
+        {
+          "name": "partial_brake",
+          "type": "double",
+          "default_value": 0.4,
+          "description": null
+        },
+        {
+          "name": "plausibility_tolerance",
+          "type": "double",
+          "default_value": 3.0,
+          "description": null
+        },
+        {
+          "name": "log_inputs",
+          "type": "bool",
+          "default_value": false,
+          "description": null
+        },
+        {
+          "name": "grid_origin_ns",
+          "type": "int64_t",
+          "default_value": 0,
+          "description": null
+        },
+        {
+          "name": "fused_period_ms",
+          "type": "int64_t",
+          "default_value": 60,
+          "description": null
+        },
+        {
+          "name": "wheel_period_ms",
+          "type": "int64_t",
+          "default_value": 10,
+          "description": null
+        },
+        {
+          "name": "input_wait_ms",
+          "type": "int64_t",
+          "default_value": 10,
+          "description": null
+        },
+        {
+          "name": "log_dir",
+          "type": "string",
+          "default_value": "",
+          "description": null
+        },
+        {
+          "name": "use_sim_time",
+          "type": "bool",
+          "default_value": false,
+          "description": null
+        }
+      ],
+      "member_variables": [
+        "fused_sub_",
+        "wheel_sub_",
+        "brake_pub_",
+        "timer_",
+        "log_",
+        "ttc_full_",
+        "ttc_partial_",
+        "partial_brake_",
+        "plausibility_tolerance_",
+        "fused_range_",
+        "fused_stamp_ns_",
+        "fused_count_",
+        "wheel_speed_",
+        "wheel_stamp_ns_",
+        "wheel_count_",
+        "log_inputs_",
+        "held_brake_",
+        "tick_",
+        "grid_origin_ns_",
+        "fused_period_ns_",
+        "wheel_period_ns_",
+        "deadline_timer_",
+        "fused_by_stamp_",
+        "wheel_by_stamp_",
+        "pending_",
+        "pending_tick_",
+        "release_ns_",
+        "need_fused_ns_",
+        "need_wheel_ns_"
+      ],
+      "lifecycle_callbacks": [],
+      "lifecycle_hooks_not_chained": [],
+      "has_param_callback": false,
+      "param_callback": null,
+      "parse_warnings": [],
+      "unresolved_includes": [],
+      "detected_includes": [],
+      "detected_take_calls": [],
+      "detected_ros_sleep_calls": [],
+      "message_filters": null,
+      "unbound_timers": [],
+      "thread_action_senders": []
+    }
+  },
+  "communication": {
+    "topics": [
+      {
+        "topic": "/brake_cmd",
+        "message_type": "std_msgs::msg::Float64",
+        "publishers": [
+          "controller"
+        ],
+        "subscribers": [
+          "simulator"
+        ],
+        "fields": [
+          {
+            "type": "float64",
+            "name": "data"
+          }
+        ],
+        "after_delay_ns": null
+      },
+      {
+        "topic": "/camera/range",
+        "message_type": "sensor_msgs::msg::Range",
+        "publishers": [
+          "camera"
+        ],
+        "subscribers": [
+          "fusion"
+        ],
+        "fields": [
+          {
+            "type": "std_msgs/Header",
+            "name": "header"
+          },
+          {
+            "type": "uint8",
+            "name": "radiation_type"
+          },
+          {
+            "type": "float32",
+            "name": "field_of_view"
+          },
+          {
+            "type": "float32",
+            "name": "min_range"
+          },
+          {
+            "type": "float32",
+            "name": "max_range"
+          },
+          {
+            "type": "float32",
+            "name": "range"
+          },
+          {
+            "type": "float32",
+            "name": "variance"
+          }
+        ],
+        "after_delay_ns": null
+      },
+      {
+        "topic": "/clock",
+        "message_type": "rosgraph_msgs::msg::Clock",
+        "publishers": [
+          "simulator"
+        ],
+        "subscribers": [],
+        "fields": [
+          {
+            "type": "builtin_interfaces/Time",
+            "name": "clock"
+          }
+        ],
+        "after_delay_ns": null
+      },
+      {
+        "topic": "/fused/range",
+        "message_type": "sensor_msgs::msg::Range",
+        "publishers": [
+          "fusion"
+        ],
+        "subscribers": [
+          "controller"
+        ],
+        "fields": [
+          {
+            "type": "std_msgs/Header",
+            "name": "header"
+          },
+          {
+            "type": "uint8",
+            "name": "radiation_type"
+          },
+          {
+            "type": "float32",
+            "name": "field_of_view"
+          },
+          {
+            "type": "float32",
+            "name": "min_range"
+          },
+          {
+            "type": "float32",
+            "name": "max_range"
+          },
+          {
+            "type": "float32",
+            "name": "range"
+          },
+          {
+            "type": "float32",
+            "name": "variance"
+          }
+        ],
+        "after_delay_ns": null
+      },
+      {
+        "topic": "/radar/range",
+        "message_type": "sensor_msgs::msg::Range",
+        "publishers": [
+          "radar"
+        ],
+        "subscribers": [
+          "fusion"
+        ],
+        "fields": [
+          {
+            "type": "std_msgs/Header",
+            "name": "header"
+          },
+          {
+            "type": "uint8",
+            "name": "radiation_type"
+          },
+          {
+            "type": "float32",
+            "name": "field_of_view"
+          },
+          {
+            "type": "float32",
+            "name": "min_range"
+          },
+          {
+            "type": "float32",
+            "name": "max_range"
+          },
+          {
+            "type": "float32",
+            "name": "range"
+          },
+          {
+            "type": "float32",
+            "name": "variance"
+          }
+        ],
+        "after_delay_ns": null
+      },
+      {
+        "topic": "/sim/state",
+        "message_type": "nav_msgs::msg::Odometry",
+        "publishers": [
+          "simulator"
+        ],
+        "subscribers": [
+          "radar",
+          "camera",
+          "wheel_speed"
+        ],
+        "fields": [
+          {
+            "type": "std_msgs/Header",
+            "name": "header"
+          },
+          {
+            "type": "string",
+            "name": "child_frame_id"
+          },
+          {
+            "type": "geometry_msgs/PoseWithCovariance",
+            "name": "pose"
+          },
+          {
+            "type": "geometry_msgs/TwistWithCovariance",
+            "name": "twist"
+          }
+        ],
+        "after_delay_ns": null
+      },
+      {
+        "topic": "/wheel/speed",
+        "message_type": "geometry_msgs::msg::TwistStamped",
+        "publishers": [
+          "wheel_speed"
+        ],
+        "subscribers": [
+          "controller"
+        ],
+        "fields": [
+          {
+            "type": "std_msgs/Header",
+            "name": "header"
+          },
+          {
+            "type": "Twist",
+            "name": "twist"
+          }
+        ],
+        "after_delay_ns": null
+      }
+    ],
+    "services": [],
+    "actions": [],
+    "endpoint_ids": "node_key"
+  },
+  "parameter_files": {},
+  "schema_version": 3,
+  "diagnostics": [
+    {
+      "code": "RCLLF-H001",
+      "node": "simulator",
+      "topic": "/brake_cmd",
+      "message": "subscription '/brake_cmd' on node 'simulator': best_effort QoS reliability \u2014 messages may be dropped in transit; LF's deterministic tag semantics do not compensate for transport drops."
+    },
+    {
+      "code": "RCLLF-H000",
+      "node": "fusion",
+      "topic": "/radar/range",
+      "message": "subscription '/radar/range' on node 'fusion': QoS reliability could not be determined during analysis (unrecognized QoS expression) \u2014 treat the effective reliability as unknown, not safe."
+    },
+    {
+      "code": "RCLLF-H000",
+      "node": "fusion",
+      "topic": "/camera/range",
+      "message": "subscription '/camera/range' on node 'fusion': QoS reliability could not be determined during analysis (unrecognized QoS expression) \u2014 treat the effective reliability as unknown, not safe."
+    }
+  ],
+  "component_instances": [
+    {
+      "package": "brake_fusion",
+      "plugin_class": "SimulatorNode",
+      "binding_key": "SimulatorNode",
+      "node_name": "simulator",
+      "namespace": "",
+      "param_args": [
+        "--rcllf-params-yaml",
+        "{/**: {ros__parameters: {grid_origin_ns: 0, publish_clock: false, start_at_ns: 0, steps_per_tick: 1, use_sim_time: false}}}"
+      ]
+    },
+    {
+      "package": "brake_fusion",
+      "plugin_class": "RadarNode",
+      "binding_key": "RadarNode",
+      "node_name": "radar",
+      "namespace": "",
+      "param_args": [
+        "--rcllf-params-yaml",
+        "{/**: {ros__parameters: {sample_mode: latest, stamp_mode: assigned_shared, stamp_origin_ns: 0, use_sim_time: false}}}"
+      ]
+    },
+    {
+      "package": "brake_fusion",
+      "plugin_class": "CameraNode",
+      "binding_key": "CameraNode",
+      "node_name": "camera",
+      "namespace": "",
+      "param_args": [
+        "--rcllf-params-yaml",
+        "{/**: {ros__parameters: {detection_work_mode: fixed, detection_work_us: 3000, sample_mode: latest, stamp_mode: assigned_shared, stamp_origin_ns: 0, use_sim_time: false}}}"
+      ]
+    },
+    {
+      "package": "brake_fusion",
+      "plugin_class": "WheelSpeedNode",
+      "binding_key": "WheelSpeedNode",
+      "node_name": "wheel_speed",
+      "namespace": "",
+      "param_args": [
+        "--rcllf-params-yaml",
+        "{/**: {ros__parameters: {sample_mode: latest, stamp_mode: assigned_shared, stamp_origin_ns: 0, use_sim_time: false}}}"
+      ]
+    },
+    {
+      "package": "brake_fusion",
+      "plugin_class": "ExactFusionNode",
+      "binding_key": "ExactFusionNode",
+      "node_name": "fusion",
+      "namespace": "",
+      "param_args": [
+        "--rcllf-params-yaml",
+        "{/**: {ros__parameters: {queue_size: 10, use_sim_time: false}}}"
+      ]
+    },
+    {
+      "package": "brake_fusion",
+      "plugin_class": "ControllerNode",
+      "binding_key": "ControllerNode",
+      "node_name": "controller",
+      "namespace": "",
+      "param_args": [
+        "--rcllf-params-yaml",
+        "{/**: {ros__parameters: {grid_origin_ns: 0, input_wait_ms: 10, log_inputs: false, use_sim_time: false}}}"
+      ]
+    }
+  ]
+}

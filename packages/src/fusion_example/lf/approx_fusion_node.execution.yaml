@@ -1,0 +1,10 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# rcllf execution config for launch/approx_fusion_node.launch.py, read by colcon lf-generate.
+# These topics have no publisher inside this launch, so they are declared
+# external. Each message enters LF time at arrival.
+external_topics:
+  # fed by another launch, sensor_a_node.launch.py
+  - /fusion/a
+  # fed by another launch, sensor_b_node.launch.py
+  - /fusion/b

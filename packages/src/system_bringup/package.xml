@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>system_bringup</name>
+  <version>0.1.0</version>
+  <description>Top-level launch package for orchestrating all example nodes.</description>
+  <maintainer email="harun.teper@cps.rwth-aachen.de">Harun Teper</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>ros2launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+
+  <exec_depend>timer_example</exec_depend>
+  <exec_depend>pubsub_example</exec_depend>
+  <exec_depend>service_example</exec_depend>
+  <exec_depend>action_example</exec_depend>
+  <exec_depend>component_example</exec_depend>
+  <exec_depend>lifecycle_example</exec_depend>
+  <exec_depend>multi_service_example</exec_depend>
+  <exec_depend>action_full_example</exec_depend>
+  <exec_depend>reentrant_fanout_example</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

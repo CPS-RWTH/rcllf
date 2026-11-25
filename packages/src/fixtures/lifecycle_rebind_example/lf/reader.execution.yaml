@@ -1,0 +1,12 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# rcllf execution config for launch/reader.launch.py, read by colcon lf-generate.
+nodes:
+  reader:
+    auto_transition: false  # the driver configures and activates it from its timer
+# Every callback publishes at most one sample (see bringup.execution.yaml).
+# after_delay pins the 1 ms delay the recorded reader runs (fixtures/README.md)
+# were taken with; the generator default is 0.
+defaults:
+  max_publishes_per_invocation: 1
+  after_delay: "1 msec"

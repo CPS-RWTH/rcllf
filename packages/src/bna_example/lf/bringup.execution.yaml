@@ -1,0 +1,17 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# rcllf execution config for launch/bringup.launch.py, read by colcon lf-generate.
+# BoundedNearestToAnchor pairs by header stamp, so each input declares where
+# its stamps come from. Both sensors stamp with now(), which is
+# the LF tag under rcllf.
+# The candidate sensor publishes in a loop over one table row, at most two
+# samples per tick, which the analyzer cannot prove (burst_unbounded).
+nodes:
+  candidate_sensor:
+    max_publishes_per_invocation: 2
+subscriptions:
+  bna_fusion:
+    /bna/anchor:
+      stamp_provenance: lf_clock
+    /bna/candidate:
+      stamp_provenance: lf_clock

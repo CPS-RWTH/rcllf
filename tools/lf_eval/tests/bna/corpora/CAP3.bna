@@ -1,0 +1,12 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# Expectations below were derived by hand.
+# CAP3 an evicted anchor ends REJECTED(anchor_evicted) and only that.
+params epoch=1 delta=10 lateness=0,0 capacity=2,8 retention=1000 timeout=500
+admit 0 100 1:a:1 @101
+admit 0 110 1:a:2 @111
+admit 0 120 1:a:3 @121
+close shutdown @200
+expect D 1:a:1 REJECTED(anchor_evicted) @121
+expect D 1:a:2 REJECTED(shutdown) @200
+expect D 1:a:3 REJECTED(shutdown) @200

@@ -1,0 +1,33 @@
+{
+  "_comment": "Recorded from a real colcon lf-analyze + lf-generate run on this fixture in the dev container (2026-10-10; re-recorded 2026-10-13 for the topic_param key). Do not hand-edit, re-record instead.",
+  "resolved_model_topic_record": {
+    "compatibility_mode": "preserved",
+    "contract_id": "pub:param_topic_node/fixture_cmd#topic",
+    "evidence": "comm_analysis.topic_mapper.resolve_name",
+    "property": "topic",
+    "provenance": "extracted",
+    "subject": {
+      "kind": "pub",
+      "node": "param_topic_node",
+      "source": "fixture_cmd"
+    },
+    "value": "/fixture_cmd"
+  },
+  "system_json_publisher": {
+    "created_in": "constructor",
+    "destroyed_in": null,
+    "is_lifecycle": false,
+    "member_variable": "pub_",
+    "message_type": "std_msgs::msg::Float64",
+    "qos_deadline_ms": null,
+    "qos_depth": 10,
+    "qos_durability": "volatile",
+    "qos_history": "keep_last",
+    "qos_reliability": "reliable",
+    "serialized_publish": false,
+    "topic": "fixture_cmd",
+    "topic_dynamic": false,
+    "topic_param": null,
+    "unconditional": true
+  }
+}

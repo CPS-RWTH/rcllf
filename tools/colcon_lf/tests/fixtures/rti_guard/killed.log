@@ -1,0 +1,12 @@
+RTI: Number of federates: 2
+RTI: Listening for federates.
+RTI: All expected federates have connected. Starting execution.
+ERROR: Reading from socket 5 failed. With error: `Connection reset by peer`
+RTI: Connection to federate 0 is closed. Exiting the thread.
+WARNING: Failed to accept the socket. Resource temporarily unavailable. Trying again.
+WARNING: Failed to accept the socket. Resource temporarily unavailable. Trying again.
+WARNING: Failed to accept the socket. Resource temporarily unavailable. Trying again.
+WARNING: Failed to accept the socket. Resource temporarily unavailable. Trying again.
+WARNING: Failed to accept the socket. Resource temporarily unavailable. Trying again.
+RTI: Federate 1 has resigned.
+RTI is exiting.

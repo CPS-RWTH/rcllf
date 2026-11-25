@@ -1,0 +1,29 @@
+[project]
+name = "ros2lf"
+version = "0.1.0"
+description = "ros2 lf command: list, launch, evaluate and scan rcllf systems"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [{name = "rcllf Contributors"}]
+dependencies = ["ros2cli"]
+
+[project.entry-points."ros2cli.command"]
+lf = "ros2lf.command.lf:LfCommand"
+
+[project.entry-points."ros2lf.verb"]
+list = "ros2lf.verb.list:ListVerb"
+launch = "ros2lf.verb.launch:LaunchVerb"
+eval = "ros2lf.verb.eval:EvalVerb"
+scan = "ros2lf.verb.scan:ScanVerb"
+report = "ros2lf.verb.report:ReportVerb"
+
+[project.urls]
+Homepage = "https://github.com/CPS-RWTH/rcllf"
+
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ros2lf*"]

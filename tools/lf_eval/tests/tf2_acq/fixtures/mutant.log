@@ -1,0 +1,29 @@
+[INFO] [1794546799.479048823] [acq_sampler]: ACQ_START t0=1794546799477949394
+RCLLF_TF2 {"event":"tf_request","node":"/acq_sampler","id":1,"target":"world","source":"sensor_link","stamp":1794546799507949394,"time":1794546799537949394,"micro":0,"wait_bound_ns":55000000,"on_timeout":"reject"}
+RCLLF_TF2 {"event":"tf_outcome","node":"/acq_sampler","id":1,"outcome":"ok","stamp":1794546799507949394,"time":1794546799537949394,"micro":0,"wait_logical_ns":0,"wait_physical_ns":49250,"latest_common":1794546799517949394,"transform":[0.030000000,0.000000000,0.000000000,0.000000000,0.000000000,0.000000000,1.000000000],"error":""}
+[INFO] [1794546799.538138956] [acq_sampler]: ACQ case=T1 id=1 outcome=ok decided_ms=60.000 x=0.030000000 y=0.000000000
+[INFO] [1794546799.538206356] [acq_sampler]: ACQ_REQ case=T1 id=1
+RCLLF_TF2 {"event":"tf_request","node":"/acq_sampler","id":2,"target":"world","source":"sensor_link","stamp":1794546799557949394,"time":1794546799567949394,"micro":0,"wait_bound_ns":55000000,"on_timeout":"reject"}
+RCLLF_TF2 {"event":"tf_outcome","node":"/acq_sampler","id":2,"outcome":"ok","stamp":1794546799557949394,"time":1794546799567949394,"micro":0,"wait_logical_ns":0,"wait_physical_ns":16140,"latest_common":1794546799557949394,"transform":[0.080000000,0.000000000,0.000000000,0.000000000,0.000000000,0.000000000,1.000000000],"error":""}
+[INFO] [1794546799.568083187] [acq_sampler]: ACQ case=T2 id=2 outcome=ok decided_ms=90.000 x=0.080000000 y=0.000000000
+[INFO] [1794546799.568118167] [acq_sampler]: ACQ_REQ case=T2 id=2
+RCLLF_TF2 {"event":"tf_request","node":"/acq_sampler","id":3,"target":"world","source":"held_link","stamp":1794546799567949394,"time":1794546799567949394,"micro":0,"wait_bound_ns":55000000,"on_timeout":"reject"}
+[INFO] [1794546799.568206616] [acq_sampler]: ACQ_REQ case=T5 id=3
+RCLLF_TF2 {"event":"tf_request","node":"/acq_sampler","id":4,"target":"world","source":"sensor_link","stamp":1794546799602949394,"time":1794546799597949394,"micro":0,"wait_bound_ns":55000000,"on_timeout":"reject"}
+[INFO] [1794546799.598096298] [acq_sampler]: ACQ_REQ case=T3 id=4
+RCLLF_TF2 {"event":"tf_outcome","node":"/acq_sampler","id":4,"outcome":"ok","stamp":1794546799602949394,"time":1794546799617949394,"micro":1,"wait_logical_ns":20000000,"wait_physical_ns":20092267,"latest_common":1794546799617949394,"transform":[0.125000000,0.000000000,0.000000000,0.000000000,0.000000000,0.000000000,1.000000000],"error":""}
+[INFO] [1794546799.618170095] [acq_sampler]: ACQ case=T3 id=4 outcome=ok decided_ms=140.000 x=0.125000000 y=0.000000000
+RCLLF_TF2 {"event":"tf_outcome","node":"/acq_sampler","id":3,"outcome":"ok","stamp":1794546799567949394,"time":1794546799622949394,"micro":0,"wait_logical_ns":55000000,"wait_physical_ns":54937395,"latest_common":1794546799477949394,"transform":[0.000000000,1.000000000,0.000000000,0.000000000,0.000000000,0.000000000,1.000000000],"error":""}
+[INFO] [1794546799.623079792] [acq_sampler]: ACQ case=T5 id=3 outcome=ok decided_ms=145.000 x=0.000000000 y=1.000000000
+RCLLF_TF2 {"event":"tf_request","node":"/acq_sampler","id":5,"target":"world","source":"static_link","stamp":1794546799627949394,"time":1794546799627949394,"micro":0,"wait_bound_ns":55000000,"on_timeout":"reject"}
+RCLLF_TF2 {"event":"tf_outcome","node":"/acq_sampler","id":5,"outcome":"ok","stamp":1794546799627949394,"time":1794546799627949394,"micro":0,"wait_logical_ns":0,"wait_physical_ns":11080,"latest_common":0,"transform":[0.000000000,2.000000000,0.000000000,0.000000000,0.000000000,0.000000000,1.000000000],"error":""}
+[INFO] [1794546799.628057329] [acq_sampler]: ACQ case=T6 id=5 outcome=ok decided_ms=150.000 x=0.000000000 y=2.000000000
+[INFO] [1794546799.628086409] [acq_sampler]: ACQ_REQ case=T6 id=5
+RCLLF_TF2 {"event":"tf_request","node":"/acq_sampler","id":6,"target":"world","source":"ghost_link","stamp":1794546799647949394,"time":1794546799657949394,"micro":0,"wait_bound_ns":55000000,"on_timeout":"reject"}
+[INFO] [1794546799.658093870] [acq_sampler]: ACQ_REQ case=T7 id=6
+RCLLF_TF2 {"event":"tf_outcome","node":"/acq_sampler","id":6,"outcome":"failure","stamp":1794546799647949394,"time":1794546799712949394,"micro":0,"wait_logical_ns":55000000,"wait_physical_ns":54970345,"latest_common":null,"transform":null,"error":"ghost_link passed to lookupTransform argument source_frame does not exist. "}
+[INFO] [1794546799.713065745] [acq_sampler]: ACQ case=T7 id=6 outcome=failure decided_ms=235.000 x=0.000000000 y=0.000000000
+RCLLF_TF2 {"event":"tf_request","node":"/acq_sampler","id":7,"target":"world","source":"sensor_link","stamp":1794546799797949394,"time":1794546799807949394,"micro":0,"wait_bound_ns":55000000,"on_timeout":"reject"}
+[INFO] [1794546799.808121685] [acq_sampler]: ACQ_REQ case=T4 id=7
+RCLLF_TF2 {"event":"tf_outcome","node":"/acq_sampler","id":7,"outcome":"ok","stamp":1794546799797949394,"time":1794546799862949394,"micro":0,"wait_logical_ns":55000000,"wait_physical_ns":54958485,"latest_common":1794546799777949394,"transform":[0.300000000,0.000000000,0.000000000,0.000000000,0.000000000,0.000000000,1.000000000],"error":""}
+[INFO] [1794546799.863062020] [acq_sampler]: ACQ case=T4 id=7 outcome=ok decided_ms=385.000 x=0.300000000 y=0.000000000

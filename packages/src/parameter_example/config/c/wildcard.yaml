@@ -1,0 +1,8 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# Passed only to node_c in launch/wildcard_scope.launch.py:
+# its /** section must reach node_c and no other node.
+/**:
+  ros__parameters:
+    robot_name: "c_wildcard"
+    max_speed: 7.5

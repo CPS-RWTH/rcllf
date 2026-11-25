@@ -1,0 +1,226 @@
+{
+  "name": "overload",
+  "launch_graph": {
+    "root": {
+      "file_path": "/workspace/packages/src/self_loop_example/launch/overload.launch.py",
+      "package": "self_loop_example",
+      "arguments": [],
+      "nodes": [
+        {
+          "package": "self_loop_example",
+          "executable": "self_loop_overload_node",
+          "name": "self_loop_overload_node",
+          "namespace": null,
+          "parameters": {},
+          "parameter_files": [],
+          "remappings": [],
+          "condition": null,
+          "condition_result": true,
+          "is_component": false,
+          "composable_container": null,
+          "environment": {},
+          "output": "screen",
+          "respawn": false,
+          "respawn_delay": null,
+          "arguments": []
+        }
+      ],
+      "includes": [],
+      "groups": [],
+      "errors": [],
+      "set_parameters": [],
+      "set_environment": [],
+      "set_configurations": [],
+      "execute_processes": []
+    },
+    "all_nodes": [
+      {
+        "package": "self_loop_example",
+        "executable": "self_loop_overload_node",
+        "name": "self_loop_overload_node",
+        "namespace": null,
+        "parameters": {},
+        "parameter_files": [],
+        "remappings": [],
+        "condition": null,
+        "condition_result": true,
+        "is_component": false,
+        "composable_container": null,
+        "environment": {},
+        "output": "screen",
+        "respawn": false,
+        "respawn_delay": null,
+        "arguments": []
+      }
+    ],
+    "context": {
+      "parameters": {},
+      "environment": {},
+      "launch_configurations": {}
+    }
+  },
+  "nodes": {
+    "self_loop_overload_node": {
+      "name": "self_loop_overload_node",
+      "class_name": "SelfLoopOverloadNode",
+      "package": "self_loop_example",
+      "source_file": "/workspace/packages/src/self_loop_example/src/self_loop_overload_node.cpp",
+      "header_file": "/workspace/packages/src/self_loop_example/include/self_loop_example/self_loop_overload_node.hpp",
+      "base_class": "rclcpp::Node",
+      "is_component": false,
+      "qualified_name": "self_loop_example::SelfLoopOverloadNode",
+      "callbacks": [
+        {
+          "name": "timer_callback",
+          "parameters": [],
+          "publishers_used": [
+            "self_overload"
+          ],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [],
+          "variables_written": [
+            "count_"
+          ],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {
+            "self_overload": 1
+          },
+          "publish_unbounded": {},
+          "missing_handler_publishers": []
+        },
+        {
+          "name": "count_callback",
+          "parameters": [
+            {
+              "name": "msg",
+              "type": "const std::shared_ptr<std_msgs::msg::Int32_<std::allocator<void>>>"
+            }
+          ],
+          "publishers_used": [],
+          "service_clients_used": [],
+          "action_clients_used": [],
+          "variables_read": [],
+          "variables_written": [],
+          "spawns_callbacks": [],
+          "feedback_published": [],
+          "result_published": [],
+          "publish_bounds": {},
+          "publish_unbounded": {},
+          "missing_handler_publishers": []
+        }
+      ],
+      "callback_groups": [
+        {
+          "name": "default_group",
+          "type": "MutuallyExclusive"
+        }
+      ],
+      "timers": [
+        {
+          "period_ms": 10.0,
+          "callback": "timer_callback",
+          "callback_group": "default_group",
+          "member_variable": "timer_",
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "offset_ms": 0.0,
+          "callback_expr": null
+        }
+      ],
+      "subscribers": [
+        {
+          "topic": "self_overload",
+          "message_type": "std_msgs::msg::Int32",
+          "callback": "count_callback",
+          "qos_depth": 2,
+          "callback_group": "default_group",
+          "member_variable": "subscription_",
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "qos_reliability": "best_effort",
+          "qos_durability": "volatile",
+          "qos_history": "keep_last",
+          "qos_deadline_ms": null,
+          "topic_dynamic": false,
+          "callback_expr": null,
+          "sync_callback": null
+        }
+      ],
+      "service_servers": [],
+      "action_servers": [],
+      "publishers": [
+        {
+          "topic": "self_overload",
+          "message_type": "std_msgs::msg::Int32",
+          "qos_depth": 10,
+          "member_variable": "publisher_",
+          "is_lifecycle": false,
+          "created_in": "constructor",
+          "destroyed_in": null,
+          "qos_reliability": "best_effort",
+          "qos_durability": "volatile",
+          "qos_history": "keep_last",
+          "qos_deadline_ms": null,
+          "topic_dynamic": false,
+          "serialized_publish": false
+        }
+      ],
+      "service_clients": [],
+      "action_clients": [],
+      "parameters": [],
+      "member_variables": [
+        "timer_",
+        "publisher_",
+        "subscription_",
+        "count_"
+      ],
+      "lifecycle_callbacks": [],
+      "lifecycle_hooks_not_chained": [],
+      "has_param_callback": false,
+      "param_callback": null,
+      "parse_warnings": [],
+      "unresolved_includes": [],
+      "detected_includes": [],
+      "detected_take_calls": [],
+      "detected_ros_sleep_calls": [],
+      "message_filters": null,
+      "unbound_timers": []
+    }
+  },
+  "communication": {
+    "topics": [
+      {
+        "topic": "/self_overload",
+        "message_type": "std_msgs::msg::Int32",
+        "publishers": [
+          "self_loop_overload_node"
+        ],
+        "subscribers": [
+          "self_loop_overload_node"
+        ],
+        "fields": [
+          {
+            "type": "int32",
+            "name": "data"
+          }
+        ],
+        "after_delay_ns": null
+      }
+    ],
+    "services": [],
+    "actions": []
+  },
+  "parameter_files": {},
+  "schema_version": 3,
+  "diagnostics": [
+    {
+      "code": "RCLLF-H001",
+      "node": "self_loop_overload_node",
+      "topic": "self_overload",
+      "message": "subscription 'self_overload' on node 'self_loop_overload_node': best_effort QoS reliability \u2014 messages may be dropped in transit; LF's deterministic tag semantics do not compensate for transport drops."
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+/* Copyright 2026 rcllf Contributors */
+/* Licensed under the Apache License, Version 2.0 */
+
+/* Landing page hero + feature grid + code-pairing tweaks.
+   Kept minimal on purpose: Material's grid-cards extension and default
+   typography already do most of the work; this file only adjusts spacing
+   and the hero CTA so the home page reads as a designed landing page
+   rather than a plain doc page. */
+
+.md-content .rlf-hero {
+  padding: 3rem 0 2rem;
+  text-align: center;
+}
+
+.md-content .rlf-hero h1 {
+  font-size: 2.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.md-content .rlf-hero p.rlf-tagline {
+  font-size: 1.25rem;
+  max-width: 42rem;
+  margin: 0 auto 1.75rem;
+  color: var(--md-default-fg-color--light);
+}
+
+.md-content .rlf-snippet-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 60em) {
+  .md-content .rlf-snippet-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.md-content .rlf-snippet-grid > div > p {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}

@@ -1,0 +1,21 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# A3: queue overflow at Q 2: three input-0 rows before any input-1 row drop the oldest.
+# Expected values: derived with an independent Python port of message_filters
+# 4.11.17 approximate_time.h (add() 210-258, process() 701-835 with the virtual
+# search from 787), fed in lf_arrival_order = sort by (tick, input, publish
+# order). The port is not shipped; the A corpora are not derived by hand, and
+# the library itself (oracle O1) must agree with them.
+# Rows r<n> are 0-based in file order, stamps in ms.
+name: A3
+policy: approx
+queue: 2
+rows:
+  - {tick: 0, input: 0, stamp_ms: 10, payload: 1}  # r0
+  - {tick: 0, input: 0, stamp_ms: 20, payload: 2}  # r1
+  - {tick: 0, input: 0, stamp_ms: 30, payload: 3}  # r2
+  - {tick: 1, input: 1, stamp_ms: 31, payload: 4}  # r3
+  - {tick: 2, input: 0, stamp_ms: 40, payload: 5}  # r4
+  - {tick: 2, input: 1, stamp_ms: 41, payload: 6}  # r5
+expect:
+  - signal 2 3

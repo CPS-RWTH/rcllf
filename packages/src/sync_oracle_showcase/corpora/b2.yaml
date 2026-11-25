@@ -1,0 +1,24 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# B2: duplicate stamp after its signal opens a fresh tuple.
+# Hand derivation against message_filters 4.11.17 sync_policies/exact_time.h:
+# add() 111-123 (tuples_[stamp], slot overwritten: last wins), checkTuple()
+# 157-196 (full -> signal, erase, clearOldTuples(); then while size > q drop
+# tuples_.begin(), the smallest stamp), clearOldTuples() 199-219 (drop every
+# stamp <= last signal, ascending).
+# Arrival order = lf_arrival_order, sort by (tick, input, publish order)
+# (one drain firing per input and tag). Rows r<n> are 0-based in file order, stamps in ms.
+#   arrival r0 a5, r1 b5 -> signal[r0, r1], last = 5, stamp 5 erased.
+#   r2 a5 starts a new tuple (clearOldTuples runs only on a signal); r3 b5
+#   -> signal[r2, r3].
+name: B2
+policy: exact
+queue: 3
+rows:
+  - {tick: 0, input: 0, stamp_ms: 5, payload: 1}  # r0
+  - {tick: 0, input: 1, stamp_ms: 5, payload: 2}  # r1
+  - {tick: 1, input: 0, stamp_ms: 5, payload: 3}  # r2
+  - {tick: 1, input: 1, stamp_ms: 5, payload: 4}  # r3
+expect:
+  - signal 0 1
+  - signal 2 3

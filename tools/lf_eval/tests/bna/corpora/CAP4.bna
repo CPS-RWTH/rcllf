@@ -1,0 +1,14 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# Expectations below were derived by hand.
+# CAP4 an evicted candidate rejects every undecided anchor whose window holds it.
+params epoch=1 delta=10 lateness=0,0 capacity=8,1 retention=1000 timeout=500
+admit 0 100 1:a:1 @101
+admit 0 105 1:a:2 @106
+admit 1 103 1:b:1 @107
+admit 1 140 1:b:2 @141
+close shutdown @200
+expect S 1:b:1 OVERFLOW @141
+expect D 1:a:1 REJECTED(candidate_evicted) @141
+expect D 1:a:2 REJECTED(candidate_evicted) @141
+expect S 1:b:2 FLUSHED @200

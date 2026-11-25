@@ -1,0 +1,15 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# Expectations below were derived by hand.
+# M1 a missing report on input 1 changes no decision.
+params epoch=1 delta=10 lateness=0,0 capacity=8,8 retention=1000 timeout=500
+admit 0 100 1:a:1 @101
+missing 1 1:b:1 @106
+admit 1 105 1:b:2 @111
+admit 1 125 1:b:3 @126
+admit 0 130 1:a:2 @131
+close shutdown @150
+expect D 1:a:1 MATCHED 1:b:2 @131
+expect S 1:b:2 SELECTED @131
+expect D 1:a:2 REJECTED(shutdown) @150
+expect S 1:b:3 FLUSHED @150

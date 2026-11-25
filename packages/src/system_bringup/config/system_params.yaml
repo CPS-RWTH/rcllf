@@ -1,0 +1,8 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# System-level parameter overrides
+parameter_node:
+  ros__parameters:
+    robot_name: "system_robot"
+    max_speed: 3.0
+    debug_mode: true

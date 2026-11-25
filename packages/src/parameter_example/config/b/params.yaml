@@ -1,0 +1,9 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+
+node_b:
+  ros__parameters:
+    robot_name: "node_b_from_params_file"
+    max_speed: 9.0
+    update_rate: 13
+    debug_mode: true

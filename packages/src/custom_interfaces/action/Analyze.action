@@ -1,0 +1,9 @@
+# Long-running analysis task
+int32 num_samples
+string analysis_type
+---
+float64[] results
+bool success
+---
+int32 samples_processed
+float64 progress_percentage

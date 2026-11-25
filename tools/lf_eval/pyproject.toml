@@ -1,0 +1,42 @@
+[project]
+name = "lf-eval"
+version = "0.1.0"
+description = "LTTng trace analysis for rcllf: trace -> metrics -> plots in one CLI call"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [{name = "rcllf Contributors"}]
+dependencies = [
+    "matplotlib>=3.5",
+    "numpy>=1.21",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7.0", "pytest-cov"]
+# scipy enables the KS-test consistency check in the `determinism` metric.
+# babeltrace2 python bindings (`bt2`) are a SYSTEM package, never pip-installed
+# here; the reader falls back to the `babeltrace2`/`babeltrace` CLI.
+stats = ["scipy>=1.7"]
+
+[project.scripts]
+lf-eval = "lf_eval.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/CPS-RWTH/rcllf"
+
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+"lf_eval.semantic" = ["*.json"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["lf_eval*"]
+
+[tool.pytest.ini_options]
+# rootdir on sys.path so tests can `from tests.conftest import ...`
+testpaths = ["tests"]
+addopts = "--import-mode=importlib"
+pythonpath = ["."]

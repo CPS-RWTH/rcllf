@@ -1,0 +1,136 @@
+rcllf
+Copyright 2024-2026 rcllf Contributors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+It contains, builds on, or downloads the third-party components listed below. Each
+stays under its own license; the license texts ship with the component (in its
+source tree, its archive, or under /usr/share/doc/<package>/copyright in the image).
+Versions are the ones this release pins or that the published image resolved.
+
+=============================================================================
+1. Third-party code in this source tree
+=============================================================================
+
+reactor-c (the Lingua Franca C runtime)
+  Where:    third_party/reactor-c (git submodule, pinned at
+            2f63540d46a8e43dfa02e348f05e035bbbb1392f)
+  License:  BSD-2-Clause
+  Upstream: https://github.com/lf-lang/reactor-c
+  Notes:    The submodule is unmodified. third_party/patches/reactor-c/ holds nine
+            patches (0001 to 0009) that rcllf applies to a copy of it at build time
+            (third_party/patches/apply_reactor_c_patches.sh) and to the runtime copy
+            inside the lfc bundle (third_party/patches/patch_lfc_runtime.py). The
+            patches change code only: no hunk removes or edits an upstream copyright
+            or license notice, so the patched files keep reactor-c's notices and its
+            BSD-2-Clause license. The patch files are Apache-2.0 contributions
+            of this project, except 0001, a backport of a hunk upstream
+            reactor-c already carries (lf-lang/reactor-c commit 8bcc07061),
+            whose code stays under reactor-c's BSD-2-Clause license.
+
+Test fixtures derived from other Apache-2.0 projects
+  Where:    tools/lf_eval/tests/fixtures/overwrites/*.json.gz (trace events of runs
+            of the reference system) and tools/lf_eval/tests/fixtures/rslcpp_intra_648.json
+            (trace events of a run of an rslcpp example)
+  License:  Apache-2.0
+  Upstream: https://github.com/ros-realtime/reference-system (ros-realtime
+            reference-system) and https://github.com/TUMFTM/rslcpp (TUMFTM
+            rslcpp). The files hold recorded trace data from runs of those
+            projects, not their source code.
+
+=============================================================================
+2. Components the build downloads
+=============================================================================
+
+MuJoCo 3.14.0
+  Where:    downloaded by packages/lf-frame/rcllf_plant/CMakeLists.txt at build
+            time (official Linux release, SHA-256 checked), linked into
+            rcllf_plant and the brake_fusion simulator. Not in this source tree.
+  License:  Apache-2.0
+  Upstream: https://github.com/google-deepmind/mujoco
+
+Lingua Franca compiler (lfc) 0.12.1
+  Where:    downloaded by docker/Dockerfile (dev target) into /opt/lfc of the
+            image, SHA-256 checked. Not in this source tree.
+  License:  BSD-2-Clause. The bundle also carries third-party Java libraries in
+            /opt/lfc/lib, each under its own license (see the jars' metadata).
+  Upstream: https://github.com/lf-lang/lingua-franca
+
+=============================================================================
+3. Components in the published container images
+=============================================================================
+
+The images ghcr.io/cps-rwth/rcllf (targets base, tracing, dev, deps, lf-rti) are
+built from docker/Dockerfile. Besides the items of sections 1 and 2 they contain:
+
+Base system
+  mcr.microsoft.com/devcontainers/base:ubuntu-24.04
+    Image definition MIT; the Ubuntu 24.04 packages in it are under their own
+    licenses (see /usr/share/doc/*/copyright in the image).
+    Upstream: https://github.com/devcontainers/images
+
+ROS 2 Jazzy (ros-jazzy-ros-base, ament lint packages, tracetools,
+example-interfaces and the rosdep keys of the shipped packages)
+  License:  Apache-2.0 for the ROS 2 core packages (rclcpp, tracetools, ...);
+            individual packages declare their own license in their package.xml.
+  Upstream: https://github.com/ros2 , https://docs.ros.org/en/jazzy/
+  Installed from the ROS apt snapshot pinned in docker/ros-apt/pins.txt.
+
+Tools installed with apt (Ubuntu 24.04 packages; license as declared in the
+package's /usr/share/doc/<package>/copyright)
+  colcon (python3-colcon-common-extensions)  Apache-2.0      https://github.com/colcon
+  rosdep (python3-rosdep)                    BSD-3-Clause    https://github.com/ros-infrastructure/rosdep
+  LTTng tools 2.13 (lttng-tools)             GPL-2.0, LGPL-2.1  https://lttng.org
+  LTTng-UST 2.13 (liblttng-ust-dev)          LGPL-2.1, MIT (Expat), GPL-3.0 (tools)  https://lttng.org
+  Babeltrace 2 (babeltrace2, python3-bt2)    MIT (Expat), GPL-3.0+ (parts)  https://babeltrace.org
+  stress-ng 0.17                             GPL-2.0+        https://github.com/ColinIanKing/stress-ng
+  OpenJDK 21 JRE (openjdk-21-jre-headless)   GPL-2.0 with Classpath Exception  https://openjdk.org
+  ccache 4.9                                 GPL-3.0+        https://ccache.dev
+  clang-format 18                            Apache-2.0 WITH LLVM-exception  https://llvm.org
+  cppcheck 2.13                              GPL-3.0+        https://cppcheck.sourceforge.io
+  uncrustify 0.78                            GPL-2.0         https://github.com/uncrustify/uncrustify
+  Graphviz 2.42 (graphviz)                   EPL-1.0         https://graphviz.org
+  nlohmann/json 3.11 (nlohmann-json3-dev)    MIT             https://github.com/nlohmann/json
+  CMake, build-essential (GCC)               BSD-3-Clause; GPL-3.0+ with GCC exceptions
+  python3-matplotlib 3.6                     Matplotlib license (PSF-based)  https://matplotlib.org
+  python3-numpy 1.26                         BSD-3-Clause    https://numpy.org
+  python3-scipy 1.11                         BSD-3-Clause    https://scipy.org
+  python3-yaml 6.0 (PyYAML)                  MIT             https://github.com/yaml/pyyaml
+  python3-pytest, python3-pytest-cov         MIT             https://pytest.org
+  python3-flake8                             MIT             https://github.com/PyCQA/flake8
+
+Tools downloaded by the Dockerfile
+  actionlint 1.7.7                           MIT             https://github.com/rhysd/actionlint
+
+Python packages installed with pip (docker/Dockerfile and requirements-docs.txt;
+versions as resolved in the dev image, licenses from each package's metadata)
+  libclang 18.1.1                   Apache-2.0 (LLVM)  https://github.com/sighingnow/libclang
+  graphviz 0.21                     MIT                https://github.com/xflr6/graphviz
+  mkdocs-material 9.7.6             MIT                https://github.com/squidfunk/mkdocs-material
+  mkdocs 1.6.1                      BSD-2-Clause       https://github.com/mkdocs/mkdocs
+  mkdocs-get-deps 0.2.2             MIT                https://github.com/mkdocs/get-deps
+  mkdocs-material-extensions 1.3.1  MIT                https://github.com/facelessuser/mkdocs-material-extensions
+  pymdown-extensions 13.1           MIT                https://github.com/facelessuser/pymdown-extensions
+  backrefs 8.2.1                    MIT                https://github.com/facelessuser/backrefs
+  Markdown 3.11.3                   BSD-3-Clause       https://github.com/Python-Markdown/markdown
+  Jinja2 3.1.6                      BSD-3-Clause       https://github.com/pallets/jinja
+  MarkupSafe 3.0.4                  BSD-3-Clause       https://github.com/pallets/markupsafe
+  click 8.5.1                       BSD-3-Clause       https://github.com/pallets/click
+  babel 2.18.0                      BSD-3-Clause       https://github.com/python-babel/babel
+  colorama 0.4.6                    BSD-3-Clause       https://github.com/tartley/colorama
+  idna 3.20                         BSD-3-Clause       https://github.com/kjd/idna
+  requests 2.34.2                   Apache-2.0         https://github.com/psf/requests
+  urllib3 2.8.0                     MIT                https://github.com/urllib3/urllib3
+  charset-normalizer 3.5.2          MIT                https://github.com/jawah/charset_normalizer
+  certifi 2026.10.23                MPL-2.0            https://github.com/certifi/python-certifi
+  pathspec 1.1.1                    MPL-2.0            https://github.com/cpburnz/python-pathspec
+  ghp-import 2.1.0                  Apache-2.0         https://github.com/c-w/ghp-import
+  watchdog 7.1.0                    Apache-2.0         https://github.com/gorakhargosh/watchdog
+  mergedeep 1.3.4                   MIT                https://github.com/clarketm/mergedeep
+  paginate 0.5.7                    MIT                https://github.com/Signum/paginate
+  platformdirs 4.14.5               MIT                https://github.com/tox-dev/platformdirs
+  pyyaml_env_tag 1.1                MIT                https://github.com/waylan/pyyaml-env-tag
+
+The rcllf Python tools (tools/colcon_lf, tools/lf_eval, tools/ros2lf) are part of
+this work. Their declared dependencies (colcon-core, libclang, graphviz, PyYAML,
+matplotlib, numpy, ros2cli, optional scipy) are the packages listed above.

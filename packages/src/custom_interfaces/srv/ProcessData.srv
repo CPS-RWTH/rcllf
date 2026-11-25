@@ -1,0 +1,7 @@
+# Request processing of sensor data
+float64[] values
+string method
+---
+float64 result
+bool success
+string message

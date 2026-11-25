@@ -1,0 +1,29 @@
+[INFO] [1794546795.337911674] [acq_sampler]: ACQ_START t0=1794546795336827304
+RCLLF_TF2 {"event":"tf_request","node":"/acq_sampler","id":1,"target":"world","source":"sensor_link","stamp":1794546795366827304,"time":1794546795396827304,"micro":0,"wait_bound_ns":55000000,"on_timeout":"reject"}
+RCLLF_TF2 {"event":"tf_outcome","node":"/acq_sampler","id":1,"outcome":"ok","stamp":1794546795366827304,"time":1794546795396827304,"micro":0,"wait_logical_ns":0,"wait_physical_ns":43420,"latest_common":1794546795376827304,"transform":[0.030000000,0.000000000,0.000000000,0.000000000,0.000000000,0.000000000,1.000000000],"error":""}
+[INFO] [1794546795.397017806] [acq_sampler]: ACQ case=T1 id=1 outcome=ok decided_ms=60.000 x=0.030000000 y=0.000000000
+[INFO] [1794546795.397072306] [acq_sampler]: ACQ_REQ case=T1 id=1
+RCLLF_TF2 {"event":"tf_request","node":"/acq_sampler","id":2,"target":"world","source":"sensor_link","stamp":1794546795416827304,"time":1794546795426827304,"micro":0,"wait_bound_ns":55000000,"on_timeout":"reject"}
+RCLLF_TF2 {"event":"tf_outcome","node":"/acq_sampler","id":2,"outcome":"ok","stamp":1794546795416827304,"time":1794546795426827304,"micro":0,"wait_logical_ns":0,"wait_physical_ns":25770,"latest_common":1794546795416827304,"transform":[0.080000000,0.000000000,0.000000000,0.000000000,0.000000000,0.000000000,1.000000000],"error":""}
+[INFO] [1794546795.426971227] [acq_sampler]: ACQ case=T2 id=2 outcome=ok decided_ms=90.000 x=0.080000000 y=0.000000000
+[INFO] [1794546795.427007037] [acq_sampler]: ACQ_REQ case=T2 id=2
+RCLLF_TF2 {"event":"tf_request","node":"/acq_sampler","id":3,"target":"world","source":"held_link","stamp":1794546795426827304,"time":1794546795426827304,"micro":0,"wait_bound_ns":55000000,"on_timeout":"reject"}
+[INFO] [1794546795.427082697] [acq_sampler]: ACQ_REQ case=T5 id=3
+RCLLF_TF2 {"event":"tf_request","node":"/acq_sampler","id":4,"target":"world","source":"sensor_link","stamp":1794546795461827304,"time":1794546795456827304,"micro":0,"wait_bound_ns":55000000,"on_timeout":"reject"}
+[INFO] [1794546795.456965978] [acq_sampler]: ACQ_REQ case=T3 id=4
+RCLLF_TF2 {"event":"tf_outcome","node":"/acq_sampler","id":4,"outcome":"ok","stamp":1794546795461827304,"time":1794546795476827304,"micro":1,"wait_logical_ns":20000000,"wait_physical_ns":20091867,"latest_common":1794546795476827304,"transform":[0.125000000,0.000000000,0.000000000,0.000000000,0.000000000,0.000000000,1.000000000],"error":""}
+[INFO] [1794546795.477045235] [acq_sampler]: ACQ case=T3 id=4 outcome=ok decided_ms=140.000 x=0.125000000 y=0.000000000
+RCLLF_TF2 {"event":"tf_outcome","node":"/acq_sampler","id":3,"outcome":"reject","stamp":1794546795426827304,"time":1794546795481827304,"micro":0,"wait_logical_ns":55000000,"wait_physical_ns":54923805,"latest_common":1794546795336827304,"transform":null,"error":"Lookup would require extrapolation at time 1794546795.426827, but only time 1794546795.336827 is in the buffer, when looking up transform from frame [held_link] to frame [world]"}
+[INFO] [1794546795.481959372] [acq_sampler]: ACQ case=T5 id=3 outcome=reject decided_ms=145.000 x=0.000000000 y=0.000000000
+RCLLF_TF2 {"event":"tf_request","node":"/acq_sampler","id":5,"target":"world","source":"static_link","stamp":1794546795486827304,"time":1794546795486827304,"micro":0,"wait_bound_ns":55000000,"on_timeout":"reject"}
+RCLLF_TF2 {"event":"tf_outcome","node":"/acq_sampler","id":5,"outcome":"ok","stamp":1794546795486827304,"time":1794546795486827304,"micro":0,"wait_logical_ns":0,"wait_physical_ns":11910,"latest_common":0,"transform":[0.000000000,2.000000000,0.000000000,0.000000000,0.000000000,0.000000000,1.000000000],"error":""}
+[INFO] [1794546795.486945849] [acq_sampler]: ACQ case=T6 id=5 outcome=ok decided_ms=150.000 x=0.000000000 y=2.000000000
+[INFO] [1794546795.486975839] [acq_sampler]: ACQ_REQ case=T6 id=5
+RCLLF_TF2 {"event":"tf_request","node":"/acq_sampler","id":6,"target":"world","source":"ghost_link","stamp":1794546795506827304,"time":1794546795516827304,"micro":0,"wait_bound_ns":55000000,"on_timeout":"reject"}
+[INFO] [1794546795.516947270] [acq_sampler]: ACQ_REQ case=T7 id=6
+RCLLF_TF2 {"event":"tf_outcome","node":"/acq_sampler","id":6,"outcome":"failure","stamp":1794546795506827304,"time":1794546795571827304,"micro":0,"wait_logical_ns":55000000,"wait_physical_ns":55001945,"latest_common":null,"transform":null,"error":"ghost_link passed to lookupTransform argument source_frame does not exist. "}
+[INFO] [1794546795.571951075] [acq_sampler]: ACQ case=T7 id=6 outcome=failure decided_ms=235.000 x=0.000000000 y=0.000000000
+RCLLF_TF2 {"event":"tf_request","node":"/acq_sampler","id":7,"target":"world","source":"sensor_link","stamp":1794546795656827304,"time":1794546795666827304,"micro":0,"wait_bound_ns":55000000,"on_timeout":"reject"}
+[INFO] [1794546795.666991425] [acq_sampler]: ACQ_REQ case=T4 id=7
+RCLLF_TF2 {"event":"tf_outcome","node":"/acq_sampler","id":7,"outcome":"reject","stamp":1794546795656827304,"time":1794546795721827304,"micro":0,"wait_logical_ns":55000000,"wait_physical_ns":55011815,"latest_common":1794546795636827304,"transform":null,"error":"Lookup would require extrapolation into the future.  Requested time 1794546795.656827 but the latest data is at time 1794546795.636827, when looking up transform from frame [sensor_link] to frame [world]"}
+[INFO] [1794546795.721999460] [acq_sampler]: ACQ case=T4 id=7 outcome=reject decided_ms=385.000 x=0.000000000 y=0.000000000

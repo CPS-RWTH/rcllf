@@ -1,0 +1,8 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# Input for the lifecycle_manual runtime smoke case, not a fixture:
+# generate lifecycle_example with the bring-up disabled so `ros2 lifecycle set`
+# drives every transition. Used as LF_EXEC_CONFIG for docker/lf_build.sh.
+nodes:
+  lifecycle_node:
+    auto_transition: false

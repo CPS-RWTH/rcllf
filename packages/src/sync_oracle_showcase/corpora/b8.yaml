@@ -1,0 +1,32 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# B8: q 1, arrival order unlike stamp order inside one tick.
+# Hand derivation against message_filters 4.11.17 sync_policies/exact_time.h:
+# add() 111-123 (tuples_[stamp], slot overwritten: last wins), checkTuple()
+# 157-196 (full -> signal, erase, clearOldTuples(); then while size > q drop
+# tuples_.begin(), the smallest stamp), clearOldTuples() 199-219 (drop every
+# stamp <= last signal, ascending).
+# Arrival order = lf_arrival_order, sort by (tick, input, publish order):
+# one drain firing takes every record due at the tag, input 0's drain first
+# (measured: all four at microstep 0).
+# Rows r<n> are 0-based in file order, stamps in ms.
+#   one tick: r0 a2, r1 a1 (input 0), then r2 b1, r3 b2 (input 1).
+#   r0 -> {2}. r1 a1 -> {1, 2} > 1: drop stamp 1 -> drop[r1, -].
+#   r2 b1 -> {1, 2} > 1: drop stamp 1 -> drop[-, r2]. r3 b2 fills 2 ->
+#   signal[r0, r3].
+#   Reversed drains (input 1 first) arrive b1, b2, a2, a1: r2 -> {1};
+#   r3 -> {1, 2} > 1: drop[-, r2]; r0 fills 2 -> signal[r0, r3]; r1 -> {1}
+#   pending. Expected drop[r1,-] at seq 0, so arrival_order_mismatch at
+#   dispatch 0 and tuple_mismatch at seq 0.
+name: B8
+policy: exact
+queue: 1
+rows:
+  - {tick: 0, input: 0, stamp_ms: 2, payload: 1}  # r0
+  - {tick: 0, input: 0, stamp_ms: 1, payload: 2}  # r1
+  - {tick: 0, input: 1, stamp_ms: 1, payload: 3}  # r2
+  - {tick: 0, input: 1, stamp_ms: 2, payload: 4}  # r3
+expect:
+  - drop 1 -
+  - drop - 2
+  - signal 0 3

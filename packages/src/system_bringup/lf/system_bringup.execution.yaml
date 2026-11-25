@@ -1,0 +1,10 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# rcllf execution config for launch/system_bringup.launch.py, read by colcon lf-generate.
+# The launch can include action_full_example (use_action_full, off by default).
+# Its server sends feedback and results from its own thread, which RCLLF-H011
+# refuses. The analysis reads both branches of the condition, so
+# the code is acknowledged here. Launched with use_action_full:=true, the
+# runtime still refuses those sends and logs each one.
+acknowledged_hazards:
+  - RCLLF-H011

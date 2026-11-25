@@ -1,0 +1,26 @@
+# Copyright 2026 rcllf Contributors
+# SPDX-License-Identifier: Apache-2.0
+#
+# The ONE variant (launch/st_one.launch.py) split into two
+# federates under centralized coordination, the publishers (tick, relay) in
+# one, the subscribers (sink, msink) in the other. Every link stays d = 0, so
+# the record links relay -> sink and tick -> sink (/c, one fan-in group), tick
+# -> sink (/d) and tick -> msink (/m) cross as plain zero-delay connections
+# and the sink must see exactly the one-process ONE deliveries. tick alone
+# would put the /c writers in two federates, which the stub fan-in rule
+# (probe P17h) refuses.
+#
+#   FEDERATE=$PWD/src/same_tag_fixture/st_one_2fed.federation.yaml \
+#     LF_LAUNCH=st_one bash ../docker/lf_build.sh same_tag_fixture
+system: lf_generated_same_tag_fixture_stone
+coordination: centralized
+
+federates:
+  source:
+    nodes:
+      - tick
+      - relay
+  sinks:
+    nodes:
+      - sink
+      - msink

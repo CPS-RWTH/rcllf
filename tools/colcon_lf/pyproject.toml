@@ -1,0 +1,39 @@
+[project]
+name = "colcon-lf"
+version = "0.1.0"
+description = "colcon verbs that analyze, generate and build Lingua Franca programs from ROS 2 packages"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [{name = "rcllf Contributors"}]
+dependencies = [
+    "colcon-core>=0.12",
+    "libclang>=16.0",
+    "graphviz>=0.20",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7.0", "pytest-cov", "pytest-xdist>=3.0"]
+
+[project.entry-points."colcon_core.verb"]
+lf = "colcon_lf.verb.lf:LfVerb"
+lf-analyze = "colcon_lf.verb.analyze:AnalyzeVerb"
+lf-configure = "colcon_lf.verb.configure:ConfigureVerb"
+lf-generate = "colcon_lf.verb.generate:GenerateVerb"
+lf-build = "colcon_lf.verb.build:BuildVerb"
+
+[tool.pytest.ini_options]
+markers = [
+    "runtime: builds and runs real lfc-generated examples, asserting actual runtime output; needs the lf_generated_* packages built, see tests/runtime/README.md",
+]
+
+[project.urls]
+Homepage = "https://github.com/CPS-RWTH/rcllf"
+
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["colcon_lf*"]

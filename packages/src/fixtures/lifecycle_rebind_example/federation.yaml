@@ -1,0 +1,18 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# Two federates for lifecycle_rebind_example. The
+# supervisor reaches the sleeper through an in-process pointer, so both share a
+# federate. Ticker and listener sit in the other one, so the sleeper outputs
+# cross a federate boundary.
+system: lifecycle_rebind_example_bringup
+
+federates:
+  driver:
+    nodes:
+      - supervisor
+      - sleeper
+      - responder
+  observer:
+    nodes:
+      - ticker
+      - listener

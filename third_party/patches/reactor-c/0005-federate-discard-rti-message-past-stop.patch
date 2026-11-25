@@ -1,0 +1,61 @@
+From: rcllf local patch
+Subject: [PATCH] federate: discard an RTI message past the stop tag, keep the RTI connection
+
+handle_tagged_message() discards a message that arrives when the federate is
+already at its stop tag, then closes `net` and returns -1. For a peer-to-peer
+connection (decentralized) that ends one listener thread. Under centralized
+coordination every message comes through the RTI connection (fed_id -1): the
+branch closed the RTI connection itself, and listen_to_rti_net() treats the -1
+as a failed read and calls lf_print_error_and_exit(), that is exit() on the RTI
+listener thread. A message tagged past the stop tag is legal here: a federate
+sends at its last tag before the stop through an `after` delay, the RTI may
+grant the receiver its stop tag first (the delay allows it), and the message
+then arrives after the stop.
+
+The exit() runs the program's atexit handlers on the listener thread while the
+main thread still runs its own shutdown, and a worker thread that next sends a
+tag to the closed connection calls exit() as well (seen in a trace from a two-board run).
+In an rcllf federate that handler list holds the ROS 2 teardown
+(ros2_lf_runtime_shutdown), so DDS entities are torn down off the main thread
+and concurrently: "Failed to delete datareader", then
+std::system_error "Invalid argument" (abort, exit -6) or SIGSEGV
+(exit -11). Without ROS the federate still exits 1 after a
+correct stop.
+
+The fix discards such a message from the RTI (fed_id -1) before that branch,
+frees its token, logs a warning and returns 0, so the RTI connection stays
+open for the stop and resign protocol. The peer-to-peer branch is unchanged.
+
+Upstream reactor-c main still closes the connection (checked 2026-10-30,
+commit 6003cd312).
+---
+--- a/core/federated/federate.c
++++ b/core/federated/federate.c
+@@ -633,6 +633,27 @@
+        // For decentralized coordination, this is needed to unblock the STAA.
+     update_last_known_status_on_input_port(env, actual_tag, port_id, true);
+ 
++    // rcllf: under centralized coordination every message
++    // comes through the RTI connection (fed_id -1). A message tagged past the
++    // stop tag of a federate that has already reached it is discarded HERE and
++    // the RTI connection stays open: the branch below closes `net`, which is the
++    // RTI connection, and its -1 makes listen_to_rti_net() call
++    // lf_print_error_and_exit(), i.e. exit() on the RTI listener thread while the
++    // main thread still runs the program's shutdown (abort or SIGSEGV).
++    if (fed_id == -1 && lf_tag_compare(env->current_tag, env->stop_tag) >= 0 && env->execution_started) {
++      lf_print_warning("Discarding a message from the RTI tagged past the stop tag.\n"
++                       "    Current tag is " PRINTF_TAG " and intended tag is " PRINTF_TAG ".",
++                       env->current_tag.time - start_time, env->current_tag.microstep,
++                       intended_tag.time - start_time, intended_tag.microstep);
++      // Freshly allocated and never scheduled (ref_count 0): free it directly.
++      _lf_free_token(message_token);
++#ifdef FEDERATED_DECENTRALIZED
++      _lf_decrement_tag_barrier_locked(env);
++#endif
++      LF_MUTEX_UNLOCK(&env->mutex);
++      return 0;
++    }
++
+     // If the current time >= stop time, discard the message.
+     // But only if the stop time is not equal to the start time!
+     if (lf_tag_compare(env->current_tag, env->stop_tag) >= 0 && env->execution_started) {

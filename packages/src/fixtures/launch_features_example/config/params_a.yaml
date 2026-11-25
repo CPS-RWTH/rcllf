@@ -1,0 +1,7 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+
+feature_node:
+  ros__parameters:
+    timer_period_ms: 300
+    message_prefix: "alpha"

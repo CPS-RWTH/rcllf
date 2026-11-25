@@ -1,0 +1,19 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# rcllf execution config for launch/corr_shared_join.launch.py.
+# corr_sub_2 waits up to 150 ms for /corr/a, the fan-in relay and the sink up
+# to 20 ms. The /corr/j edge then has d + T_own + max(T_in) = 1 + 20 + 20 ms
+# of slack after its publishing tag, below the 150 ms join of corr_sub_2 at
+# the same tag. 150 ms + 1 ms stays below the 200 ms timer period, so the
+# join never holds the next tick.
+nodes:
+  corr_publisher:
+    # One build serves every CORR_SCENARIO, so the analyzer cannot prove k
+    # on /corr/a or /corr/b (see corr_many_execution.yaml).
+    max_publishes_per_invocation: 3
+  corr_sub_2:
+    take_timeout_ms: 150
+  corr_fanin_relay:
+    take_timeout_ms: 20
+  corr_relay_sink:
+    take_timeout_ms: 20

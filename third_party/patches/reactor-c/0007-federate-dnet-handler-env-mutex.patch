@@ -1,0 +1,65 @@
+From: rcllf local patch
+Subject: [PATCH] federate: run the DNET handler under env->mutex
+
+handle_downstream_next_event_tag() runs on the RTI listener thread. When the
+incoming DNET is below the last skipped NET it resends that NET and then
+rewrites last_sent_NET and last_skipped_NET. It did so without env->mutex,
+while the main thread reads and writes the same fields in
+lf_send_next_event_tag() under env->mutex. Preempted between its check of
+last_skipped_NET and the socket write (CPU stress, or a 20 ms sleep put there
+for the falsification test), the listener sent a NET the main thread had
+already superseded: the main thread had skipped further NETs, sent a newer NET
+and set last_skipped_NET to NEVER, and the listener's NET (the old skipped tag,
+or NEVER read after the main thread's write) reached the RTI after the newer
+one. The RTI records any NET unconditionally, so the federate's next event was
+recorded in its past (or as NEVER).
+
+In a federation where the two federates are upstream of each other through
+`after` delays (two hosts, delay 4999999 ns) that stale
+record blocks both: the peer's earliest incoming message tag is computed from
+it and stays below the peer's next event, and the federate's own grant is
+bounded by its stale tag plus the cycle delay. Both main threads wait in
+lf_cond_wait for a TAG that never comes; the listener's post-send write set
+last_skipped_NET to NEVER, so later DNETs trigger no resend. The run ends at
+the runner's SIGINT (3 of 150 stressed single-host runs, once on a board).
+
+The fix takes env->mutex around the check, the resend and the bookkeeping, so
+the handler and lf_send_next_event_tag() serialize on the same lock and the
+RTI sees NETs from one federate in the order its logical time advanced. Lock
+order env->mutex then lf_outbound_net_mutex is the one the main thread already
+uses in send_tag(). A regression test in the colcon_lf suite
+(test_fed_dnet_handler_race.py) covers it.
+---
+--- a/core/federated/federate.c
++++ b/core/federated/federate.c
+@@ -1464,6 +1464,14 @@
+ 
+ /**
+  * Handle a downstream next event tag (DNET) message from the RTI.
++ *
++ * rcllf: the body runs under env->mutex. The main thread reads and
++ * writes last_skipped_NET, last_sent_NET and last_DNET in
++ * lf_send_next_event_tag() under that mutex. Without it this thread, preempted
++ * between its check of last_skipped_NET and the send, resent a skipped NET that
++ * the main thread had already replaced by a newer one (or by NEVER), the RTI
++ * recorded the federate's next event in its past, and the federation stalled
++ * (brake_fusion fed1host under CPU stress).
+  */
+ static void handle_downstream_next_event_tag() {
+   size_t bytes_to_read = sizeof(instant_t) + sizeof(microstep_t);
+@@ -1480,6 +1488,7 @@
+ 
+   environment_t* env;
+   _lf_get_environments(&env);
++  LF_MUTEX_LOCK(&env->mutex); // rcllf: see the comment above.
+   if (lf_tag_compare(DNET, _fed.last_skipped_NET) < 0) {
+     LF_PRINT_LOG("The incoming DNET " PRINTF_TAG " is earlier than the last skipped NET " PRINTF_TAG
+                  ". Send the skipped NET",
+@@ -1490,6 +1499,7 @@
+   }
+ 
+   _fed.last_DNET = DNET;
++  LF_MUTEX_UNLOCK(&env->mutex);
+ }
+ 
+ /**

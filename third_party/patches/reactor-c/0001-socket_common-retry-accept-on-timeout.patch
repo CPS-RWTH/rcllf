@@ -1,0 +1,28 @@
+From: rcllf local patch
+Subject: [PATCH] socket_common: retry accept() on timeout instead of giving up
+
+accept_socket() tested `errno != EAGAIN || errno != EWOULDBLOCK || errno != EINTR`,
+which is always true. The listening socket carries a 10 s SO_RCVTIMEO, so the
+first accept() timeout (EAGAIN) ended the loop and the RTI stopped waiting for
+federates that had not connected yet ("RTI failed to accept the federate.").
+
+Backport of the hunk upstream reactor-c already carries on main (commit
+8bcc07061, merged with lf-lang/reactor-c PR #358, 2026-08-14), applied to the
+pinned submodule 2f63540d4. Drop this patch when the pin moves past 564b622d1.
+---
+--- a/network/impl/src/socket_common.c
++++ b/network/impl/src/socket_common.c
+@@ -201,8 +201,11 @@
+     if (socket_id >= 0) {
+       // Got a socket
+       break;
+-    } else if (socket_id < 0 && (errno != EAGAIN || errno != EWOULDBLOCK || errno != EINTR)) {
+-      if (errno != ECONNABORTED) {
++    } else if (socket_id < 0 && (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR)) {
++      // ECONNABORTED: a connection was aborted before accept() could complete — not fatal.
++      // EINVAL: the socket was shut down (e.g., shutdown_socket() was called to unblock this
++      // accept() intentionally when the RTI is shutting down) — expected, not an error.
++      if (errno != ECONNABORTED && errno != EINVAL) {
+         lf_print_warning("Failed to accept the socket. %s.", strerror(errno));
+       }
+       break;

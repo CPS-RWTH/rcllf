@@ -1,0 +1,18 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# rcllf execution config for launch/corr_loop_echo_delayed.launch.py.
+#
+# The corr_loop_echo causality loop with one link given a logical delay
+# d = 1 msec, the fix the refusal message names. /corr/ping stays d = 0
+# (same-tag delivery), /corr/pong delivers at t + 1 msec, so the loop runs.
+subscriptions:
+  corr_ping_echo:
+    /corr/pong:
+      min_input_period_ms: 200
+connections:
+  /corr/pong:
+    links:
+      "corr_pong -> corr_ping_echo":
+        after_delay: "1 msec"
+        reason: budgeted
+        source: "fixture: the one link that breaks the causality loop"

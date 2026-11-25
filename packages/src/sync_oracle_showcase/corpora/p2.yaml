@@ -1,0 +1,37 @@
+# Copyright 2026 rcllf Contributors
+# Licensed under the Apache License, Version 2.0
+# P2: a every 30 ms and b every 50 ms from 1000 ms (300 ms).
+# Expected values: derived with the same independent ApproximateTime port as
+# A1-A4 (not shipped) on this schedule. Sequence numbers shifted by
+# 1000 ms: (0,0) (2,1) (3,2) (5,3) (7,4) (8,5) (10,6) for approx at q 10.
+# Payload = the timer's sequence number. Rows r<n> 0-based, stamps in ms.
+name: P2
+policy: approx
+queue: 3
+rows:
+  - {tick: 0, input: 0, stamp_ms: 1000, payload: 0}  # r0
+  - {tick: 0, input: 1, stamp_ms: 1000, payload: 0}  # r1
+  - {tick: 1, input: 0, stamp_ms: 1030, payload: 1}  # r2
+  - {tick: 2, input: 1, stamp_ms: 1050, payload: 1}  # r3
+  - {tick: 3, input: 0, stamp_ms: 1060, payload: 2}  # r4
+  - {tick: 4, input: 0, stamp_ms: 1090, payload: 3}  # r5
+  - {tick: 5, input: 1, stamp_ms: 1100, payload: 2}  # r6
+  - {tick: 6, input: 0, stamp_ms: 1120, payload: 4}  # r7
+  - {tick: 7, input: 0, stamp_ms: 1150, payload: 5}  # r8
+  - {tick: 7, input: 1, stamp_ms: 1150, payload: 3}  # r9
+  - {tick: 8, input: 0, stamp_ms: 1180, payload: 6}  # r10
+  - {tick: 9, input: 1, stamp_ms: 1200, payload: 4}  # r11
+  - {tick: 10, input: 0, stamp_ms: 1210, payload: 7}  # r12
+  - {tick: 11, input: 0, stamp_ms: 1240, payload: 8}  # r13
+  - {tick: 12, input: 1, stamp_ms: 1250, payload: 5}  # r14
+  - {tick: 13, input: 0, stamp_ms: 1270, payload: 9}  # r15
+  - {tick: 14, input: 0, stamp_ms: 1300, payload: 10}  # r16
+  - {tick: 14, input: 1, stamp_ms: 1300, payload: 6}  # r17
+expect:
+  - signal 0 1
+  - signal 4 3
+  - signal 5 6
+  - signal 8 9
+  - signal 12 11
+  - signal 13 14
+  - signal 16 17
