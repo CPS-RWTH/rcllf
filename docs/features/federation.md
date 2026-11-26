@@ -54,6 +54,7 @@ timestamps and epochs differ):
 
 ```text
 [RTI-1] RTI: Number of federates: 2
+[RTI-1] WARNING: Failed to accept the socket. Resource temporarily unavailable. Trying again.
 [federate__publisher_node-2] [INFO] [...] [ros2_lf_binding.corr]: rcllf corr: admitted egress edge 0 (global 0) PublisherNode -> /subscriber_node on '/sensor_data' (d = 0 ns, L = 200000000 ns)
 [federate__subscriber_node-3] [INFO] [...] [ros2_lf_binding.corr]: rcllf corr: admitted ingress edge 0 PublisherNode -> SubscriberNode on '/sensor_data' (d = 0 ns, ...)
 [RTI-1] RTI: All expected federates have connected. Starting execution.
@@ -67,7 +68,9 @@ timestamps and epochs differ):
 
 Each federate is its own process (`federate__publisher_node-2`, `federate__subscriber_node-3`),
 the `/sensor_data` edge is admitted on both sides (egress and ingress), and every
-`Publishing` line is followed by the `I heard` line with the same values.
+`Publishing` line is followed by the `I heard` line with the same values. The RTI's
+`Failed to accept the socket` warning while the federates connect is harmless (see
+[Troubleshooting](#troubleshooting)).
 
 ### Multi-container run (separate logs per service)
 
@@ -78,7 +81,20 @@ docker compose --profile federation run --rm lf-fed-subscriber       # subscribe
 docker compose --profile federation down rti                         # stop RTI when done
 ```
 
-Each `lf-fed-*` service starts one federate against the running RTI. You can run them in three separate terminals to see each one's logs cleanly. Federates are bounded by `FED_TIMEOUT` (default 60 s) so a misconfigured run terminates rather than hanging forever:
+Each `lf-fed-*` service starts one federate against the running RTI. You can run them in three separate terminals to see each one's logs cleanly. Each federate runs for at most `FED_TIMEOUT` seconds (default 60), so a misconfigured run terminates rather than hanging forever. A working run ends the same way: the federate that reaches its `FED_TIMEOUT` first gets a Ctrl-C, asks the RTI to stop, and both federates stop at the same logical time and resign. The end of a working run (trimmed, from a run with `FED_TIMEOUT=20` for the publisher and `30` for the subscriber):
+
+```text
+publisher:   [federate__publisher_node-1] [INFO] [...] [publisher_node]: Publishing: temp=51.0, humidity=71.0, pressure=1044.0
+subscriber:  [federate__subscriber_node-1] [INFO] [...] [subscriber_node]: I heard: temp=51.0, humidity=71.0, pressure=1044.0
+publisher:   [INFO] [federate__publisher_node-1]: process has finished cleanly [pid ...]
+subscriber:  [federate__subscriber_node-1] Fed 1 (subscriber_node_main): Connection to the RTI closed with an EOF.
+subscriber:  [INFO] [federate__subscriber_node-1]: process has finished cleanly [pid ...]
+rti:         RTI: Federate 1 has resigned.
+rti:         RTI: Federate 0 has resigned.
+rti:         RTI is exiting.
+```
+
+The service whose timeout fired exits with code 124 (the status of `timeout`), the other with 0. Both federates print the same `Elapsed logical time`. For a longer run, raise the timeout:
 
 ```bash
 FED_TIMEOUT=300 docker compose --profile federation run --rm lf-fed-publisher    # longer run
@@ -100,7 +116,11 @@ ros2 lf launch my_robot bringup
 ```
 
 `ros2 lf launch` starts the RTI and every federate from the generated orchestrator
-launch file, as in the one-shot run above. `--coordination decentralized` selects the
+launch file, as in the one-shot run above. It runs what the last `colcon lf` (or
+`colcon lf-generate`) produced for that launch file: after a `--federate` run,
+`ros2 lf launch my_robot bringup` starts the federation, and `ros2 lf list` shows
+`ready (federated)`. Run `colcon lf --package my_robot` without `--federate` to get the
+one-process program back. `--coordination decentralized` selects the
 other coordination mode (see [Coordination mode](#coordination-mode)).
 
 ## How federation differs from plain ROS 2
@@ -441,7 +461,7 @@ The RTI is built from the `third_party/reactor-c` submodule and is bundled into:
 | `RTI_PORT` | `15045` | RTI, federates | TCP port the RTI listens on. |
 | `RTI_HOST` | `localhost` | `lf-fed-*` | Host the federate dials for the RTI. |
 | `RTI_NUM_FEDERATES` | `2` | `rti` | How many federates the RTI expects. |
-| `FED_TIMEOUT` | `60` | `lf-fed-*` | Seconds before a standalone federate gives up if the federation never converges. |
+| `FED_TIMEOUT` | `60` | `lf-fed-*` | Seconds a standalone federate runs. When it expires the federate gets SIGINT and the whole federation stops cleanly; a federation that never converges also ends then. |
 | `FEDERATION_ID` | `""` | `lf-fed-*` | Optional federation ID. Both sides must match. Empty = lfc default. |
 | `ROS2_LF_MATCH_WARMUP_MS` | `ROS2_LF_DISCOVERY_TIMEOUT_MS` (5000) | federates | Bound of the endpoint match warm-up below. An endpoint still unmatched at the bound refuses the start (exit 3). `0` checks once and does not wait. |
 | `ROS2_LF_TEST_START_DELAY` | unset | federates | Test only. `<name>:<ms>` delays a federate whose executable name contains `<name>` by `<ms>` (1 to 10000) after its peer check, to force startup skew in a pilot. Logs a WARN. |
@@ -580,7 +600,7 @@ real latency is about 5 times the logical latency the program states.
 ## Troubleshooting
 
 **Publisher prints "Connected to localhost:15045" then nothing happens.**
-The publisher reached the RTI but the RTI is waiting for the second federate. Start the subscriber. If you forgot to start the RTI, the federate exits after `FED_TIMEOUT` seconds.
+The publisher reached the RTI but the RTI is waiting for the second federate. Start the subscriber. If you forgot to start the RTI, the federate exits after `FED_TIMEOUT` seconds (plus up to 15 s if it does not react to Ctrl-C).
 
 **Subscriber spams "Writing to socket … failed. Broken pipe".**
 The federate's connection to the RTI broke, usually because the RTI exited (federation completed or other federate disconnected). Restart the RTI before the next run.

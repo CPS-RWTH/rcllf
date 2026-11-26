@@ -3,7 +3,7 @@
     schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>ros2_lf_binding</name>
-  <version>0.1.0</version>
+  <version>0.1.1</version>
   <description>
     Binding library that connects lfc-compiled Lingua Franca reactors to ROS2
     component nodes. Replaces lf_reactor_bridge.c with a real runtime:

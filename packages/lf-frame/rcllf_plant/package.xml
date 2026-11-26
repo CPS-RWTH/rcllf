@@ -3,7 +3,7 @@
     schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>rcllf_plant</name>
-  <version>0.1.0</version>
+  <version>0.1.1</version>
   <description>
     The rcllf plant boundary: the PlantAdapter interface, the Transactor
     that enforces one transaction per logical step (stale, mismatch and

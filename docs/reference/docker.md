@@ -122,7 +122,9 @@ so entrypoint edits take effect without rebuilding the image.
    `lf_generated_*` package; `all` builds every package; a list such as
    `ENTRYPOINT_PACKAGES="pubsub_example my_robot"` builds those and their dependencies.
    `ENTRYPOINT_FORCE_BUILD=1` always builds.
-   `ENTRYPOINT_SKIP_BUILD=1` never builds. The build runs `--parallel-workers 2` with
+   `ENTRYPOINT_SKIP_BUILD=1` never builds. Compose does not forward these three from the
+   host shell; pass them with `-e`, for example
+   `docker compose run --rm -e ENTRYPOINT_PACKAGES=all dev`. The build runs `--parallel-workers 2` with
    `MAKEFLAGS=-j3` (at most 2 packages x 3 compiler jobs) and prints both values when it
    starts. `ENTRYPOINT_PARALLEL_WORKERS=N` changes the worker count; a `MAKEFLAGS` set by
    the caller is kept. `docker-compose.yml` sets `ENTRYPOINT_PARALLEL_WORKERS=2` and
@@ -149,11 +151,11 @@ docker build -f docker/Dockerfile --target tracing -t rcllf:tracing .
 Each release tag publishes one image per target, tagged `<version>-<target>`:
 
 ```bash
-docker pull ghcr.io/cps-rwth/rcllf:0.1.0-deps      # what the Compose services run
-docker pull ghcr.io/cps-rwth/rcllf:0.1.0-dev       # dev target, without the rosdep layer
-docker pull ghcr.io/cps-rwth/rcllf:0.1.0-tracing   # tracing target
-docker pull ghcr.io/cps-rwth/rcllf:0.1.0-base      # base target
-docker pull ghcr.io/cps-rwth/rcllf:0.1.0-lf-rti    # standalone RTI (the rti service)
+docker pull ghcr.io/cps-rwth/rcllf:0.1.1-deps      # what the Compose services run
+docker pull ghcr.io/cps-rwth/rcllf:0.1.1-dev       # dev target, without the rosdep layer
+docker pull ghcr.io/cps-rwth/rcllf:0.1.1-tracing   # tracing target
+docker pull ghcr.io/cps-rwth/rcllf:0.1.1-base      # base target
+docker pull ghcr.io/cps-rwth/rcllf:0.1.1-lf-rti    # standalone RTI (the rti service)
 ```
 
 The Compose services expect the **deps** target under the local name
@@ -161,7 +163,7 @@ The Compose services expect the **deps** target under the local name
 it instead of building:
 
 ```bash
-docker tag ghcr.io/cps-rwth/rcllf:0.1.0-deps ghcr.io/cps-rwth/rcllf:dev
+docker tag ghcr.io/cps-rwth/rcllf:0.1.1-deps ghcr.io/cps-rwth/rcllf:dev
 ```
 
 Do not `docker compose pull dev`: the registry's `:dev` tag is the dev target, which

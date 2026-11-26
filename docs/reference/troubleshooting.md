@@ -35,9 +35,11 @@ Normal. The Lingua Franca compiler (`lfc`) prints its progress (`Generating code
 `Code generation finished.`) on stderr, and colcon reports any stderr output. The build
 succeeded if colcon says `Finished <<<` for the package.
 
-The first container start reports `2 packages had stderr output: brake_fusion
-ros2_lf_binding` for the same reason: those are compiler warnings (`-Wunused-but-set-variable`,
-`-Wmissing-field-initializers`), and both packages finish.
+The first container start can report packages with stderr output too, for example
+`1 package had stderr output: ros2_lf_binding`: those are compiler warnings
+(`-Wunused-but-set-variable`, `-Wmissing-field-initializers`). Which packages warn
+depends on the compiler run; the build succeeded if the summary says
+`packages finished` and no package `failed`.
 
 ### Node class does not accept NodeOptions
 

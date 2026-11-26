@@ -22,6 +22,8 @@ source install/setup.bash
 colcon lf-analyze --package pubsub_example
 ```
 
+The analyzer prints nothing for about half a minute while it reads the sources, then:
+
 ```text
 ==> Found 4 launch file(s) to analyze
 
@@ -107,7 +109,7 @@ colcon lf-generate --system-json lf-analysis/pubsub_example/bringup/system.json
   -> lf-analysis/pubsub_example/bringup/lf/Bringup.lf
   -> lf-analysis/pubsub_example/bringup/lf/include/ros2_lf_reaction_ids.h
   -> lf-generated/lf_generated_pubsub_example_bringup/src/ros2_lf_reaction_ids_init.cpp
-  -> lf-analysis/pubsub_example/bringup/rcllf_trace_manifest.json (sha256 83bbdc199d11)
+  -> lf-analysis/pubsub_example/bringup/rcllf_trace_manifest.json (sha256 ...)
   -> lf-generated/lf_generated_pubsub_example_bringup/ (lfc package)
 
 ==> All 1 system(s) generated successfully
@@ -118,7 +120,8 @@ program, `lf-generated/lf_generated_pubsub_example_bringup/lf/Bringup.lf` (the s
 file as `lf-analysis/pubsub_example/bringup/lf/Bringup.lf`). A *reactor* is LF's
 component (the counterpart of a node) and a *reaction* is a block of code the
 runtime triggers, the counterpart of a callback. Here is the publisher node as you
-wrote it, in `pubsub_example/src/publisher_node.cpp`:
+wrote it, in `pubsub_example/src/publisher_node.cpp` (the launch file renames the node
+`publisher` to `publisher_node`, the name in the logs):
 
 ```cpp
 PublisherNode::PublisherNode(const rclcpp::NodeOptions & options)
@@ -297,8 +300,10 @@ delivery. Under a stock executor that interleaving depends on both. Here the pro
 fixes it.
 
 !!! tip "`colcon lf` runs this pipeline in one command"
-    `colcon lf --package pubsub_example` runs analyze, generate and build in one
-    go and produces the same `lf_generated_pubsub_example_bringup` package. Start it with
+    `colcon lf --package pubsub_example` runs analyze, configure, generate and build
+    in one go and produces the same `lf_generated_pubsub_example_bringup` package. The
+    configure step writes a default `config/execution.yaml` next to each analysis; this
+    tutorial generates without one, which gives the same defaults. Start it with
     `ros2 lf launch pubsub_example bringup`. See
     [CLI Reference](../reference/cli.md#colcon-lf-all-in-one).
 

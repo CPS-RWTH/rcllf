@@ -3,7 +3,7 @@
     schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>ros2_lf_msgs</name>
-  <version>0.1.0</version>
+  <version>0.1.1</version>
   <description>
     Custom message types for the rcllf runtime. Provides LFTag, which
     carries a full Lingua Franca tag (logical time, microstep, wall time)

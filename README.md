@@ -31,7 +31,7 @@ The exact guarantees and their conditions:
 [Three kinds of determinism](docs/design/time-and-coordination.md#three-kinds-of-determinism)
 and the [Support Matrix](docs/features/support-matrix.md).
 
-This is a first prototype release (v0.1.0).
+This is a prototype release (v0.1.1).
 
 ## What is supported
 
@@ -47,10 +47,10 @@ This is a first prototype release (v0.1.0).
 ## Quick start
 
 You need Git, [Docker](https://docs.docker.com/get-docker/) 20.10+ and
-[Docker Compose](https://docs.docker.com/compose/install/) v2.
+[Docker Compose](https://docs.docker.com/compose/install/) v2 or later.
 
 ```bash
-git clone --branch v0.1.0 https://github.com/CPS-RWTH/rcllf.git
+git clone --branch v0.1.1 https://github.com/CPS-RWTH/rcllf.git
 cd rcllf
 git submodule update --init third_party/reactor-c
 docker compose build dev

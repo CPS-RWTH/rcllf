@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>sync_oracle_showcase</name>
-  <version>0.1.0</version>
+  <version>0.1.1</version>
   <description>
     message_filters ExactTime and ApproximateTime on a declared corpus domain
     (mf-sync/1) against the pinned library as oracle O1.

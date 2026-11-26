@@ -25,7 +25,7 @@ carries the messages over DDS.
 With Git, Docker and Docker Compose on an x86_64 Linux host:
 
 ```bash
-git clone --branch v0.1.0 https://github.com/CPS-RWTH/rcllf.git
+git clone --branch v0.1.1 https://github.com/CPS-RWTH/rcllf.git
 cd rcllf
 git submodule update --init third_party/reactor-c
 docker compose build dev

@@ -27,8 +27,11 @@ PublisherNode --[sensor_data: SensorData]--> SubscriberNode
 - Subscriber: `SubscriberInfo(topic="sensor_data", callback="topic_callback")`
 - Callback parameter: `CallbackParameter(name="msg", type="...SensorData::SharedPtr")`
 
-## Run
+## Run with stock ROS 2
 
 ```bash
 docker compose run --rm dev ros2 launch pubsub_example bringup.launch.py
 ```
+
+This runs the two nodes as plain ROS 2 processes. To convert and run them under rcllf,
+follow the [Quickstart](../getting-started/index.md).

@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>sentry_pipeline</name>
-  <version>0.1.0</version>
+  <version>0.1.1</version>
   <description>
     Flagship benchmark pipeline: a 9-node sensor-fusion/planning/control
     system used to compare stock rclcpp executors against the lfc runtime

@@ -331,8 +331,10 @@ services:
   # The federate services do NOT auto-start the RTI — federation is all-or-nothing
   # and conflating "I forgot the RTI" with "I forgot the other federate" leads to
   # confusing failure modes (publisher hangs, subscriber spams Broken pipe).
-  # FED_TIMEOUT (seconds, default 60) bounds how long a standalone federate waits
-  # for its peers and the RTI before exiting. Override for long-running federations.
+  # FED_TIMEOUT (seconds, default 60) bounds how long a standalone federate runs.
+  # At the timeout it gets SIGINT (as Ctrl+C would), which stops the whole
+  # federation at one logical time so every federate resigns; SIGKILL follows
+  # 15 s later if it does not exit. Override for long-running federations.
   lf-fed-publisher:
     <<: *common
     profiles: [federation]
@@ -358,7 +360,7 @@ services:
         echo "==> Connecting to RTI at $${RTI_HOST}:$${RTI_PORT} (timeout $${FED_TIMEOUT}s)"
         echo "==> RTI must already be running.  Start it first with: docker compose --profile federation up -d rti"
         # exec replaces the bash shell so SIGINT goes directly to ros2 launch.
-        exec timeout --foreground $${FED_TIMEOUT} ros2 launch lf_generated_pubsub_example_bringup_federated_publisher_node \
+        exec timeout --foreground -s INT -k 15 $${FED_TIMEOUT} ros2 launch lf_generated_pubsub_example_bringup_federated_publisher_node \
           lf_publishernodesystem.launch.py
 
   lf-fed-subscriber:
@@ -381,7 +383,7 @@ services:
         source install/setup.bash
         echo "==> Connecting to RTI at $${RTI_HOST}:$${RTI_PORT} (timeout $${FED_TIMEOUT}s)"
         echo "==> RTI must already be running.  Start it first with: docker compose --profile federation up -d rti"
-        exec timeout --foreground $${FED_TIMEOUT} ros2 launch lf_generated_pubsub_example_bringup_federated_subscriber_node \
+        exec timeout --foreground -s INT -k 15 $${FED_TIMEOUT} ros2 launch lf_generated_pubsub_example_bringup_federated_subscriber_node \
           lf_subscribernodesystem.launch.py
 
 # =============================================================================
