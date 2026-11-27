@@ -36,9 +36,8 @@ wheel_speed --/wheel/speed--> controller --/brake_cmd--> simulator
 | order of the two radars, pairs formed, input of each controller tick | whatever scheduling and transport timing give | fixed by logical time |
 | stopping position | safe, but varies from run to run | safe, identical in every run |
 
-The runtime smoke test (`tools/colcon_lf/tests/runtime/test_runtime_brake_fusion.py`)
-checks both versions against an expected value derived from the plant and
-controller parameters alone. A stepped model with exact sensing stops at 35.205 m.
+The project's runtime test checks both versions against an expected value derived
+from the plant and controller parameters alone. A stepped model with exact sensing stops at 35.205 m.
 Swept over the sensing errors the controller is designed for, the model gives a
 band of 34.64 to 36.49 m that every run must stop in. The rcllf run must also
 stop at the same position three times in a row.
@@ -85,6 +84,22 @@ FASTDDS_BUILTIN_TRANSPORTS=UDPv4 \
 If you run both at once, give each shell its own `ROS_DOMAIN_ID` so the two
 simulators do not hear each other.
 
+On the rcllf side, `colcon lf-analyze` prints two warnings and `colcon lf-generate`
+two `[INFO]` lines. All of them are expected for this example:
+
+```text
+Warning: n4_cb_state_callback -> n7_cb_fused_callback: spline size > 1 not supported
+Warning: n6_cb_settle -> n7_cb_fused_callback: spline size > 1 not supported
+...
+    ! [INFO] RCLLF-H001 subscription '/radar/range' on node 'radar_tracker': best_effort QoS reliability on admitted correspondence edge(s) ...
+    ! [INFO] RCLLF-H001 subscription '/radar/track' on node 'fusion': best_effort QoS reliability on admitted correspondence edge(s) ...
+```
+
+The first two come from Graphviz while it draws the system graph and do not affect the
+program.
+[RCLLF-H001](../reference/diagnostic-codes.md#rcllf-h001) notes that the radar topics
+use best-effort QoS: a dropped sample is reported as missing, not silently skipped.
+
 ### Compare the stops
 
 Each run prints one line when the vehicle stands still, then keeps running until you
@@ -99,7 +114,7 @@ Run each version three times and compare the lines:
 - **Stock**: the position can differ from run to run, inside the band of 34.64 to
   36.49 m that the smoke test derives from the plant and controller parameters.
 - **rcllf**: the same line in every run, `BF_STOP position=35.38489000000461 step=3743`
-  (the value the runtime smoke test records and checks), inside the same band.
+  (the value the project's runtime test checks), inside the same band.
 
 ### When a run exits early (`worker_lag_exceeded`)
 
@@ -109,8 +124,8 @@ worst lag. Such a run establishes nothing about the stop: the program did not ke
 up with logical time, so its `BF_STOP` line, if it printed one, is evidence neither
 for nor against the repeatable stop. Leave it out of the
 comparison and run again; on a loaded or small machine, close other work first.
-The smoke test does the same: it reports a lag-only exit 3 as a warning and checks
-the stop of the clean runs only.
+The project's runtime test does the same: it reports a lag-only exit 3 as a warning
+and checks the stop of the clean runs only.
 
 The rcllf program runs two LF worker threads on every host. `t2_approx.launch.py`
 pins that count with its `rcllf_workers` launch argument, which `colcon lf-generate`
@@ -122,12 +137,9 @@ while 10 of 10 runs with two workers finished. To try another count for
 one run, prefix the launch with `RCLLF_LF_ARGS="-w N"`, which overrides the pin.
 
 Known limitation: the pin fixes the idle many-core case, not small shared
-machines. On the 2-vCPU GitHub CI runner the 2-worker program intermittently
-falls more than 200 ms behind (worst lag 243 to 703 ms in five failing CI
-runs) and exits with code 3 (`worker_lag_exceeded`). The cause is not found.
-All three rcllf runs of one CI smoke can lag together (593.5 to 663.2 ms); such a
-CI run checks no rcllf stop position, only the stock-run checks and the worker pin.
-Any other broken invariant, or any other exit code, still fails the test.
+machines. On a machine with 2 virtual CPUs the 2-worker program sometimes falls more
+than 200 ms behind and exits with code 3 (`worker_lag_exceeded`), and several runs in
+a row can do so. Run it on a machine with more cores, or rerun until a run finishes.
 
 The package README (`packages/src/brake_fusion/README.md`) describes the execution
 configs and the tests.

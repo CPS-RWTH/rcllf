@@ -2,8 +2,8 @@
 
 ## `colcon lf` (All-in-One)
 
-Runs the full pipeline for the workspace or a specific package: analyze, then generate,
-then build.
+Runs the full pipeline for the workspace or a specific package: analyze, configure,
+generate, then build.
 
 ```bash
 colcon lf                            # All packages
@@ -11,17 +11,25 @@ colcon lf --package pubsub_example   # Single package
 ```
 
 `colcon lf` runs `lf-analyze`, `lf-configure` (scaffold only), `lf-generate` and
-`lf-build`, the same steps as the explicit sequence below, except that its analyze step
-writes only `system.json` (no visualizations, as `--format json`):
+`lf-build`. Its analyze step writes only `system.json` (no visualizations, as
+`--format json`). The three main steps by hand:
 
 ```bash
 colcon lf-analyze --package pubsub_example
 colcon lf-generate --package pubsub_example
-colcon lf-build --package pubsub_example     # colcon build --packages-select lf_generated_<package>_<name>
+colcon lf-build --package pubsub_example
 ```
 
-`--federate` and `--coordination` take the same values as on `colcon lf-generate` and
-are passed to it; `--launch-arg NAME:=VALUE` is passed to `lf-analyze`.
+| Option | Default | Description |
+|---|---|---|
+| `--package` | all packages | Process only this package |
+| `--workspace` | auto-detect | Colcon workspace root |
+| `--launch-arg NAME:=VALUE` | none | Launch argument value, repeatable; passed to `lf-analyze` |
+| `--after-delay` | `0` | Default `after` delay of the connections, passed to `lf-generate` |
+| `--fast` | off | Fast mode, passed to `lf-generate` (see [Fast mode and logical timeout](#fast-mode-and-logical-timeout)) |
+| `--timeout "<LF time>"` | none | Logical timeout, passed to `lf-generate` |
+| `--federate` | off | `per-process`, `per-node` or a `federation.yaml` path, passed to `lf-generate` |
+| `--coordination` | `centralized` | `centralized` or `decentralized`, passed to `lf-generate` |
 
 `colcon lf` does not stop at one refused or failed system: it builds every system that
 generated and ends with one row per launch file, then exits non-zero if any system was
@@ -40,8 +48,9 @@ colcon lf-generate --system-json lf-analysis/my_bringup/minimal_pubsub/system.js
 colcon lf-build --package my_bringup
 ```
 
-There is one generation path: every run emits the lfc-compilable `.lf` and the
-`lf_generated_<package>_<name>` colcon package. The former stock wrapper output is gone.
+There is one generation path: every run emits the lfc-compilable `.lf` and a colcon
+package named `lf_generated_<package>_<system>`, see
+[Generated package names](#generated-package-names).
 
 ## `colcon lf-analyze`
 
@@ -54,7 +63,8 @@ colcon lf-analyze --package pubsub_example                           # one packa
 colcon lf-analyze --package pubsub_example --launch-file bringup.launch.py  # one launch file
 ```
 
-Discovers all launch files (`*.launch.py` and `*_launch.py`) in every package's
+Discovers all launch files (`*.launch.py`, `*_launch.py`, `*.launch.xml` and
+`*.launch.yaml`) in every package's
 `launch/` directory and its subdirectories and analyzes each one, unless narrowed by
 `--package` or `--launch-file`. A package is found by the `<name>` in its
 `package.xml`, as colcon names it, wherever its directory sits under `src/`.
@@ -76,35 +86,57 @@ command names both and exits 1 before it writes anything: rename one, or select 
 | `--launch-file` | all launch files | Specific launch file name |
 | `--workspace` | auto-detect | Colcon workspace root path |
 | `--output-dir` | `lf-analysis/{package}/` | Override output location |
-| `--format` | `all` | Output format: `json`, `pdf`, `svg`, or `all` |
+| `--format` | `all` | Visualization format: `svg`, `pdf`, `json` (no visualizations besides the launch graph) or `all`. `all` writes SVG only; `pdf` writes PDF. See [Output structure](#output-structure) |
+| `--launch-arg NAME:=VALUE` | none | Launch argument value, as `ros2 launch` takes it, repeatable. The analysis is fixed to these values. An argument the launch file does not declare is refused |
 | `--viz-only` | off | Skip extraction and regenerate visualizations from existing `system.json` files in the output directory |
 | `--launch-only` | off | Run only the launch-file parsing stage, writing `launch_graph.json` per launch file without C++ analysis |
 
 ```bash
-colcon lf-analyze --package pubsub_example --format json  # JSON only, no visualizations
-colcon lf-analyze --package pubsub_example --format svg   # SVG only
-colcon lf-analyze --package pubsub_example --format pdf   # PDF only
+colcon lf-analyze --package pubsub_example --format json  # no visualizations (the launch graph SVG is still written)
+colcon lf-analyze --package pubsub_example --format svg   # SVG, the same as the default
+colcon lf-analyze --package pubsub_example --format pdf   # PDF
 ```
 
 ### Output structure
 
-Default output goes to `lf-analysis/{package}/{launch_stem}/`:
+Default output goes to `lf-analysis/{package}/{launch_stem}/`. With the default format,
+`lf-analyze` writes:
 
 ```text
 packages/lf-analysis/pubsub_example/bringup/
-  system.json                   # Full SystemGraph
+  system.json                   # the whole analysis (SystemGraph, see Data Model)
   nodes/
-    publisher_node.json         # Individual NodeInfo
+    publisher_node.json         # one file per node
     subscriber_node.json
-  config/
-    params.yaml                 # Copied parameter files (if any)
+  launch/
+    launch_graph.json           # launch file hierarchy
+    launch_graph.svg
   viz/
-    launch_graph.pdf / .svg     # Launch file hierarchy
-    comm_graph.pdf / .svg       # Inter-node communication
-    system_graph.pdf / .svg     # Unified system view
+    comm_graph.svg              # inter-node communication
+    launch_graph.svg            # launch file hierarchy
+    system_graph.svg            # unified system view
+    topology.svg
     nodes/
-      publisher_node_internals.pdf / .svg
-      subscriber_node_internals.pdf / .svg
+      publisher_node_internals.svg
+      subscriber_node_internals.svg
+```
+
+`--format pdf` writes PDF instead of SVG under `viz/`. `--format json` skips `viz/`, but
+`launch/launch_graph.svg` is written either way. The launch graph is the one picture that
+is not under `--format`.
+
+`colcon lf-configure` writes `config/`, and `colcon lf-generate` writes the other files next to `system.json`:
+
+```text
+  config/
+    execution.yaml              # your execution policy (sparse, scaffolded once)
+    execution.reference.yaml    # every key with its default (rewritten on each run)
+  exec_config.json              # the resolved policy the generator read
+  resolved_model.json           # see Resolved Model
+  generate_status.json          # generated, refused or failed, and why
+  lf/                           # the generated .lf program
+  lfc_packages.txt              # name of the generated package
+  rcllf_trace_manifest.json     # static manifest for trace analysis
 ```
 
 With `--output-dir`, output uses `{output_dir}/{package}/{launch_stem}/` instead.
@@ -127,13 +159,6 @@ cd packages
 colcon lf-analyze --package pubsub_example --launch-file bringup.launch.py
 ```
 
-Manual installation outside the dev container:
-
-```bash
-cd tools/colcon_lf
-pip install -e ".[test]"
-```
-
 ### Error handling
 
 - **Missing workspace**: provide `--workspace` or run from the workspace directory.
@@ -154,6 +179,14 @@ colcon lf-configure --system-json path/to/system.json   # One exact analysis
 colcon lf-configure --show                       # Print the resolved effective table
 colcon lf-configure --interactive                # Guided prompt loop
 ```
+
+| Option | Default | Description |
+|---|---|---|
+| `--system-json` | every `system.json` under `lf-analysis/` | One exact analysis |
+| `--package` | all packages | Every analysis under `lf-analysis/<package>/` |
+| `--workspace` | auto-detect | Colcon workspace root |
+| `--show` | off | Print the resolved effective policy table (after merging, before environment overrides) and write nothing |
+| `--interactive` | off | Prompt for policy values (defaults, nodes, subscriptions) and write the sparse `execution.yaml` |
 
 `--package` and `--system-json` are mutually exclusive. See
 [Execution Configuration](../features/execution-config.md) for the config file format
@@ -200,15 +233,40 @@ you want exactly one of them.
 ### Output
 
 For each system, generates a self-contained colcon package at
-`lf-generated/lf_generated_{package}_{stem}/`:
+`lf-generated/lf_generated_<package>_<system>/`, see
+[Generated package names](#generated-package-names):
 
 | Output | Description |
 |--------|-------------|
-| `lf/<Stem>.lf` | Lingua Franca source, one reactor per ROS 2 node class |
-| `lf/include/ros2_lf_reaction_ids.h` | RID macro definitions |
+| `lf/<Main>.lf` | Lingua Franca source, one reactor per ROS 2 node class; `<Main>` is the launch file stem in CamelCase |
+| `lf/include/` | Header with the reaction ID macros |
 | `src/ros2_lf_startup.cpp` | Pre-`main()` init (constructor attribute) |
-| `src/ros2_lf_reaction_ids_init.cpp` | Populates the RID table at startup |
-| `CMakeLists.txt` | Invokes `lfc`, links `ros2_lf_binding` |
+| `src/ros2_lf_reaction_ids_init.cpp` | Populates the reaction ID table at startup |
+| `src/node_factories.cpp`, `src/nodes/` | Factories that create your node classes inside the program |
+| `launch/lf_<system>.launch.py` | Launch file that starts the program |
+| `system.json`, `exec_config.json`, `correspondence.json` | Copies of the analysis and the settings the program reads at start-up |
+| `CMakeLists.txt`, `package.xml` | Invokes `lfc`, links `ros2_lf_binding` |
+
+### Generated package names
+
+The generated package is named `lf_generated_<package>_<system>`. `<system>` is the launch
+file stem with the underscores removed, in lower case: `bringup.launch.py` gives
+`bringup`, `long_names.launch.py` gives `longnames`. When that name equals the name of one
+of the system's node classes, `system` is appended: `publisher_node.launch.py` gives
+`publishernodesystem`.
+
+`ros2 lf list` prints the launch stem, not the package name. The exact package names are the
+directories under `lf-generated/` and the first word of each `lfc_packages.txt`. For
+`pubsub_example` they are:
+
+```text
+lf_generated_pubsub_example_bringup
+lf_generated_pubsub_example_longnames
+lf_generated_pubsub_example_publishernodesystem
+lf_generated_pubsub_example_subscribernodesystem
+```
+
+A federated build adds one package per federate with the suffix `_<federate>`.
 
 See [Architecture](../design/architecture.md) for the full generation and build pipeline, and
 [Federation](../features/federation.md) for `--federate`.
@@ -239,21 +297,26 @@ two words); `-f false` turns a `--fast` program back to real time. See
 ## `colcon lf-build`
 
 Builds the generated packages: `colcon build --packages-select` over every
-`lf_generated_<package>_<name>` (and `lf_generated_<package>_<name>_federated*`) package generated from
-the analyzed systems, into the workspace's own install space.
+`lf_generated_<package>_<system>` package (and its per-federate packages) generated from
+the analyzed systems, into the workspace's own install space. The package's
+`CMakeLists.txt` invokes `lfc` as a build step and links the result against
+`ros2_lf_binding`.
 
 ```bash
 colcon lf-build                              # Every generated package
 colcon lf-build --package pubsub_example     # Only those generated from one package
 ```
 
-## Building the Generated Package
+| Option | Default | Description |
+|---|---|---|
+| `--package` | all packages | Only the packages generated from this source package |
+| `--workspace` | auto-detect | Colcon workspace root |
 
-The generated package builds via a normal `colcon build`. Its `CMakeLists.txt` invokes
-`lfc` as a build step and links the result against `ros2_lf_binding`.
+To build one generated package by hand, give `colcon build` its exact name from
+[Generated package names](#generated-package-names):
 
 ```bash
-colcon build --packages-select lf_generated_<package>_<stem>
+colcon build --packages-select lf_generated_pubsub_example_bringup
 ```
 
 ## `ros2 lf list`
@@ -265,29 +328,46 @@ ros2 lf list                             # All systems
 ros2 lf list --package basic_components  # Filter by package
 ```
 
-The last column says whether a system can be launched: `ready`, `ready (federated)`,
-`refused (RCLLF-H...)` with the hazard code that stopped generation, or
-`failed (see: colcon lf-generate)`, or `- (run: colcon lf-generate)` when the system was
-analyzed but never generated.
+| Option | Default | Description |
+|---|---|---|
+| `--workspace` | auto-detect | Colcon workspace root |
+| `--package` | all packages | Only systems of this package |
+
+The columns are the package, the launch stem, the number of nodes, the node type
+(`nodes`, `components`, `mixed` or `unknown`) and `Launch Ready`:
+
+| `Launch Ready` | Meaning |
+|---|---|
+| `ready`, `ready (federated)` | generated and built; launch it with `ros2 lf launch` |
+| `refused (RCLLF-...)` | generation stopped on that code, see [Diagnostic codes](diagnostic-codes.md) |
+| `failed (see: colcon lf-generate)` | generation failed; run it again to read the error |
+| `- (run: colcon lf-generate)` | analyzed but never generated |
+| `- (run: colcon lf-build --package <pkg>)` | generated but not built yet |
 
 ## `ros2 lf launch`
 
-Launches a generated system: finds the installed `lf_generated_<package>_<name>` package
-for `<package> <stem>`, sources the workspace and runs its launch file.
+Launches a generated system: finds the installed generated package for
+`<package> <stem>` (see [Generated package names](#generated-package-names)), sources the
+workspace and runs its launch file.
 
 ```bash
 ros2 lf launch pubsub_example bringup
 ros2 lf launch basic_components combo_pipeline
 ```
 
+| Argument | Description |
+|---|---|
+| `package`, `stem` | Package name and launch stem, as `ros2 lf list` prints them |
+| `NAME:=VALUE` | Launch arguments, as `ros2 launch` takes them. Only arguments the generated launch file declares are forwarded; the others were fixed when `lf-analyze` read the launch file |
+| `--workspace` | Colcon workspace root (default: auto-detect) |
+
 
 ## `ros2 lf eval`
 
-Evaluates one or more results folders (the `rcllf.result/1` layout: `result.json`,
+Experimental. Evaluates one or more results folders (the `rcllf.result/1` layout: `result.json`,
 `run_set.json`, `runs/`, `build/` and a `SHA256SUMS` manifest) with
 `lf_eval`'s metric registry and writes `<first folder>/eval/<UTC>/`. Such folders
-come from the project's benchmark harness, which is not part of this release. It works
-in four steps.
+are the input of this command. It works in four steps.
 
 1. **Verify (step 0).** Before anything else is read, every file of each
    folder is checked against the folder's `SHA256SUMS`. A listed file that is
@@ -356,7 +436,7 @@ ros2 lf eval <folder> --allow-missing 'runs/*/tracing/*'   # traces trimmed afte
 | `--option METRIC.KEY=VALUE` | option for a metric that declares it, repeatable |
 | `--include-excluded` | also feed runs that `run_set.json` excluded to the metrics |
 | `--allow-missing GLOB` | step 0: waive missing files matching GLOB, repeatable |
-| `--chain A->B->C` | explicit chain (default: derived from the group's `system.json`) |
+| `--chain A->B->C` | explicit chain, repeatable (default: derived from the group's `system.json`) |
 | `--backend {bt2,cli}` | force a trace reader backend |
 | `-o, --out DIR` | eval dir (default: `<first folder>/eval/<UTC>/`); inside a results folder only under its `eval/` |
 | `--no-plots` | skip plots |
@@ -367,7 +447,7 @@ There is no MLflow export.
 
 ## `ros2 lf report`
 
-Renders an eval dir written by `ros2 lf eval` as Markdown (default) or, with
+Experimental. Renders an eval dir written by `ros2 lf eval` as Markdown (default) or, with
 `--html`, as one static HTML page. `RESULTS` is either an eval dir or a results
 folder, whose newest `eval/<UTC>/` holding a `metrics.json` is used. Several
 arguments give one page with a section each.
@@ -446,17 +526,8 @@ ros2 lf scan --package pubsub_example --launch-file bringup.launch.py --html sca
 | `-o, --out FILE` | also write the JSON to FILE |
 | `--html FILE` | also write the HTML page |
 
-## Docker Compose Services
+## Docker Compose services
 
-Full analyze → generate → lfc compile → build → run pipeline in one command:
-
-```bash
-# Build the dev image once
-docker compose build dev
-
-# pubsub_example, the default package of the lf-build service
-docker compose --profile lf run --rm lf-build
-```
-
-
-See [Architecture](../design/architecture.md) for what these commands do step-by-step.
+The Compose services that run these commands (`lf-build`, `analyzer` and the others) are
+listed in [Docker](docker.md#docker-compose-services). See [Architecture](../design/architecture.md)
+for what the pipeline does step by step.

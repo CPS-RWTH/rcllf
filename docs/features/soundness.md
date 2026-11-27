@@ -1,82 +1,84 @@
 # Soundness Checker
 
-The soundness checker verifies that `colcon lf-analyze`'s statically extracted
-pub/sub graph matches what a real run actually does, by diffing it against an
-execution traced with [LTTng](tracing.md). Read this page to check whether your
-system's extracted model is trustworthy, or to investigate a suspected extraction
-gap.
+The soundness checker tests whether the model `colcon lf-analyze` extracted from your
+sources matches what the system really does. It runs your launch file under an
+[LTTng](tracing.md) trace and compares the publishers and subscriptions that appeared
+at run time with the ones in the extracted model. Use it before you trust a
+conversion, or when you suspect the extractor missed a connection.
 
-## What it checks
-
-The extraction pipeline (`colcon lf-analyze`) resolves publisher/subscriber
-connections from a C++ AST walk plus launch-file remapping resolution
-(`comm_analysis/topic_mapper.py`). That resolution can silently under-report a real
-connection: a topic name built via string concatenation, a helper method the
-analyzer doesn't traverse, or a macro-wrapped call site.
-
-The soundness checker closes that loop: it runs the real system under an LTTng trace
-and diffs the **runtime-observed** pub/sub graph against the **statically extracted**
-one. A runtime edge with no matching entry in the static model is the dangerous
-class, a connection the analyzer never told you about.
-
-## What it compares
-
-| Side | Source | Extracted from |
-|---|---|---|
-| Static | `system.json` (`colcon lf-analyze` output) | Each node's declared `publishers[]`/`subscribers[]` (`SystemModel`, `tools/lf_eval/lf_eval/model/system.py`) |
-| Runtime | LTTng trace of a real `ros2 launch` run | `rcl_publisher_init` / `rcl_subscription_init` tracepoints (fire once per publisher/subscription **at construction time**, regardless of whether a message ever flowed) |
-
-Node identity is reconciled between the two sides via `SystemModel`'s existing
-`canonical_id`/`aliases` scheme (case/separator-insensitive matching between a
-trace's `rcl_node_init.node_name` spelling and `system.json`'s `key`/`name`/
-`class_name` fields). Topic matching is slash-tolerant (`"a/b"` and `"/a/b"` compare
-equal).
-
-This is topics only, v1. The comparison never looks at service or action
-*endpoints* themselves (backlog). It does, however, understand the **topics that
-actions and lifecycle nodes create**, because those show up on the runtime side
-whether or not the model mentions them. See
-[Derived infrastructure edges](#derived-infrastructure-edges) below.
-
-## Running it
-
-### One command: `scripts/soundness_check.sh`
-
-```bash
-scripts/soundness_check.sh <package> [launch-stem] [--strict] [--duration N]
-
-# Examples
-scripts/soundness_check.sh pubsub_example
-scripts/soundness_check.sh pubsub_example bringup --strict
-scripts/soundness_check.sh pubsub_example bringup --duration 15
-```
-
-`launch-stem` defaults to `bringup`. Flow:
-
-1. `colcon lf-analyze --package <pkg>` writes `packages/lf-analysis/<pkg>/<launch>/system.json`.
-2. A per-run LTTng session (unique session name, `ros2:*` events), output under
-   `output/experiments/soundness/<pkg>-<launch>/<run-id>/tracing/` (repo convention:
-   all traces land under `output/experiments/`).
-3. `timeout --foreground <duration> ros2 launch <pkg> <launch>.launch.py`, a bounded
-   run, default 20 seconds.
-4. `lf-eval analyze <run-dir> --system <system.json> --metrics topology` (adds
-   `--fail-on-missing-edge` under `--strict`).
-5. A PASS/FINDINGS summary printed to the terminal, with counts and a pointer to the
-   full `metrics.json`.
-
-### Via Docker Compose
+## Run it
 
 ```bash
 docker compose --profile lf run --rm soundness-check
-docker compose --profile lf run --rm -e SOUNDNESS_PACKAGE=pubsub_example soundness-check
-docker compose --profile lf run --rm -e SOUNDNESS_STRICT=1 soundness-check
 ```
 
-Overridable environment variables: `SOUNDNESS_PACKAGE` (default `pubsub_example`),
-`SOUNDNESS_LAUNCH` (default `bringup`), `SOUNDNESS_DURATION` (default `20`),
-`SOUNDNESS_STRICT` (default `0`).
+This checks `pubsub_example` with its `bringup` launch file for 20 seconds. The
+terminal shows four steps and ends with a verdict:
 
-### Directly via `lf-eval`
+```text
+==> [1/4] colcon lf-analyze --package pubsub_example
+...
+==> [2/4] LTTng session ros2_trace_soundness_pubsub_example_bringup_20261127_100705 -> /workspace/output/experiments/soundness/pubsub_example-bringup/<run>/tracing
+==> [3/4] bounded run: timeout --foreground 10s ros2 launch pubsub_example bringup.launch.py
+...
+==> [4/4] lf-eval analyze --metrics topology
+System: bringup (2 nodes) [/workspace/packages/lf-analysis/pubsub_example/bringup/system.json]
+...
+== topology ==
+  run                                               mode     missing_from_model  unobserved_in_runtime  unmatched_nodes
+  ------------------------------------------------  -------  ------------------  ---------------------  ---------------
+  soundness_pubsub_example_bringup_20261127_100705  unknown  0                   0                      0
+
+Written: /workspace/output/experiments/soundness/pubsub_example-bringup/<run>/analysis/metrics.json
+
+===================================================================
+PASS: pubsub_example/bringup ... no runtime edges missing from the static model
+  unobserved_in_runtime:  0  (declared edge never traced; informational)
+  unmatched_nodes:        0
+===================================================================
+```
+
+Those lines come from a run with `-e SOUNDNESS_DURATION=10`; the full output also
+contains the launch log. `PASS` means that every publisher and subscription seen at
+run time is in the model. The container exits with 0.
+
+Run the check on the **stock launch** of your package, as the script does, and not on
+the generated LF program. The generated program runs as one process named after the
+system (`Bringup`), so its nodes do not match the model's node names and the report
+shows false `missing_from_model` and `unmatched_nodes` counts.
+
+### Options
+
+Compose reads these environment variables (set them with `-e NAME=value`):
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `SOUNDNESS_PACKAGE` | `pubsub_example` | package to check |
+| `SOUNDNESS_LAUNCH` | `bringup` | launch file stem |
+| `SOUNDNESS_DURATION` | `20` | seconds the launch runs |
+| `SOUNDNESS_STRICT` | `0` | `1` makes a `missing_from_model` finding fail the run |
+
+To check another package that is not in the first-start build, name it in
+`ENTRYPOINT_PACKAGES` too (see the [Docker reference](../reference/docker.md)):
+
+```bash
+docker compose --profile lf run --rm -e ENTRYPOINT_PACKAGES="dynamic_topic_example" \
+  -e SOUNDNESS_PACKAGE=dynamic_topic_example soundness-check
+```
+
+Inside the dev container you can call the script directly:
+
+```bash
+scripts/soundness_check.sh <package> [launch-stem] [--strict] [--duration N]
+```
+
+It does four things. It writes `system.json` with `colcon lf-analyze --package <pkg>
+--format json`, opens an LTTng session, runs `timeout --foreground <duration> ros2
+launch <pkg> <launch>.launch.py`, and analyzes the trace with `lf-eval analyze
+--metrics topology` (adding `--fail-on-missing-edge` under `--strict`). The trace
+lands in `output/experiments/soundness/<pkg>-<launch>/<run-id>/tracing/`.
+
+### Checking a trace you already have
 
 If you already have a traced run directory and a `system.json`, skip the script:
 
@@ -86,123 +88,103 @@ lf-eval analyze output/experiments/<run-dir> \
   --metrics topology
 ```
 
-Add `--fail-on-missing-edge` to make the CLI exit non-zero when a
-`missing_from_model` finding is present. Every other `lf-eval` metric stays purely
-advisory (never affects the exit code), and this flag is the one opt-in exception,
-scoped to the `topology` metric only.
+Add `--fail-on-missing-edge` to exit non-zero when a `missing_from_model` finding is
+present. Every other `lf-eval` metric is advisory and never changes the exit code.
+`<run-dir>` may be a directory made by `docker/trace.sh` (it holds `ust/`) or by the
+script above (it holds `tracing/`); see [Tracing](tracing.md#where-the-trace-lands).
 
-## Finding classes
+## What it checks
+
+The extractor resolves publisher and subscriber connections from a C++ syntax-tree
+walk plus launch-file remapping. That can silently miss a real connection: a topic
+name built by string concatenation, a helper method the analyzer does not follow, or
+a macro-wrapped call. A runtime edge with no match in the model is the dangerous
+case, a connection the analyzer never told you about.
+
+| Side | Source | Taken from |
+|---|---|---|
+| Static | `system.json` | each node's `publishers[]` and `subscribers[]` |
+| Runtime | LTTng trace of a real `ros2 launch` run | the `rcl_publisher_init` and `rcl_subscription_init` events, which fire once per publisher or subscription when it is created, whether or not a message ever flows |
+
+Node names are matched without regard to case and separators, and topic names
+without regard to a leading slash. The comparison covers topics only. Service and
+action endpoints are not compared, but the topics that actions and lifecycle nodes
+create are understood (see [Derived infrastructure edges](#derived-infrastructure-edges)).
+
+## Findings
 
 | Finding | Meaning | Severity |
 |---|---|---|
-| `missing_from_model` | A runtime pub/sub edge with no matching entry in the static model. The dangerous class: a real connection the analyzer never extracted. | This is what `--strict`/`--fail-on-missing-edge` gates on. |
-| `unobserved_in_runtime` | A static edge that was never traced at runtime (the node/topic exists in `system.json` but no matching init event fired during the run). | Informational, can mean the launch never exercised that code path, not necessarily a bug. |
-| `unmatched_nodes` | A runtime node name that could not be resolved against the static model at all (via `canonical_id`/`aliases`). | Informational, usually a naming/remap mismatch worth investigating, not proof of a missing edge. |
+| `missing_from_model` | A runtime publisher or subscription with no match in the model. The dangerous class: a real connection the analyzer never extracted. | `--strict` and `--fail-on-missing-edge` fail on this. |
+| `unobserved_in_runtime` | A modeled edge that never appeared at run time. | Informational. The launch may not have exercised that code path. |
+| `unmatched_nodes` | A runtime node name that could not be matched to the model. | Informational. Usually a naming or remapping mismatch. |
 
-Infrastructure topics (`/parameter_events`, `/rosout`, `/tf`, `/tf_static`) are
-excluded from `missing_from_model` by default, because every real node publishes/subscribes
-to some of these and they would otherwise swamp the dangerous-class findings with
-noise the static extractor never claimed to capture. Pass
-`--include-infra-topics` to `lf-eval analyze`/`report` to report them anyway.
+Infrastructure topics (`/parameter_events`, `/rosout`, `/tf`, `/tf_static`) are left
+out of `missing_from_model` by default, because every node touches some of them and
+they would drown the real findings. Pass `--include-infra-topics` to `lf-eval
+analyze` to report them anyway.
 
 ## Derived infrastructure edges
 
-ROS creates some topics that no `create_publisher`/`create_subscription` call in
-your source ever mentions, so the static extractor cannot list them. But they
-*are* implied by other things `system.json` already records. Rather than adding
-them to the exclusion list above (which would suppress genuine findings on the
-same topics), the model **derives** them and compares them as ordinary declared
-edges:
+ROS creates some topics that no `create_publisher` call in your source mentions, but
+`system.json` already implies them. The checker derives them and compares them like
+declared edges:
 
 | Class | Derived from | Edges |
 |---|---|---|
-| Action | `communication.actions[*]` (`action`, `server`, `clients`) | server **publishes**, each client **subscribes** to `<action>/_action/status` and `<action>/_action/feedback` |
-| Lifecycle | a node whose `base_class` is a lifecycle base | node **publishes** `/<node>/transition_event` |
+| Action | `communication.actions[*]` (`action`, `server`, `clients`) | the server publishes, and each client subscribes to, `<action>/_action/status` and `<action>/_action/feedback` |
+| Lifecycle | a node whose `base_class` is a lifecycle base | the node publishes `/<node>/transition_event` |
 
-Because these are derived per node rather than globally excluded, a
-`transition_event` published by a *non*-lifecycle node, or an `_action/status`
-edge on a node that is not that action's server or client, still surfaces as a
-`missing_from_model` finding.
+Because they are derived per node and not excluded globally, a `transition_event`
+published by a node that is not a lifecycle node, or an `_action/status` edge on a node
+that is not that action's server or client, still shows up as `missing_from_model`.
 
-Two limits:
+- An action's goal, result and cancel endpoints are services, not topics, so they are
+  neither derived nor compared.
+- Derived edges never produce `unobserved_in_runtime`: a run that never used an action
+  is not evidence of an extraction gap.
+- `ros2 launch` starts its own lifecycle-manager node (`launch_ros_<pid>`). It is not in
+  `system.json`, so the checker ignores it by name.
 
-- **An action's goal, result and cancel endpoints are services, not topics**, so
-  they never appear as publisher/subscription init events and are not derived.
-  If one ever shows up on the topic side, it stays a reportable finding.
-- **Derived edges never produce `unobserved_in_runtime` findings.** A run that
-  simply never exercised an action is not evidence of an extraction gap, and
-  reporting it would trade one noise class for another.
-
-`ros2 launch` spawns its own lifecycle-manager node (`launch_ros_<pid>`) which
-subscribes to the transition-event topics of the nodes it manages. It is not in
-`system.json` because it was never meant to be, so it is excluded by node name.
-Both its edges and its unresolvable identity are tooling noise, not findings.
-
-!!! note "Refused `message_filters` subscriptions stay findings on purpose"
-    The analyzer records the two inputs of an admitted
-    two-input ExactTime or ApproximateTime synchronizer as ordinary
-    subscriptions, so `MessageFiltersSubscriberNode`'s `/sync_topic_a` and
-    `/sync_topic_b` are part of the static model. A form `RCLLF-H003` refuses,
-    such as `MessageFiltersCacheNode`'s `Subscriber` feeding a `Cache`, is not
-    extracted. A `missing_from_model` finding for its topic is a **true
-    positive, not noise**, because that runtime edge genuinely is absent from
-    the static model. Suppressing it would hide a real, already-known gap.
+!!! note "A refused `message_filters` form stays a finding on purpose"
+    The analyzer records the two inputs of an admitted two-input ExactTime or
+    ApproximateTime synchronizer as ordinary subscriptions. A form that
+    [RCLLF-H003](../reference/diagnostic-codes.md#rcllf-h003) refuses, for example a
+    `Cache` fed by a `Subscriber`, is not extracted. A `missing_from_model` finding for
+    its topic is a true positive, because that edge really is absent from the model.
 
 ## Caveats
 
-!!! warning "Trace must capture startup"
-    `rcl_publisher_init`/`rcl_subscription_init` fire once, at node construction. A
-    trace started *after* the node is already running (or a run that exits before
-    the LTTng session starts) will show that node's edges as `unmatched_nodes` or
-    simply absent, not a real soundness finding. `scripts/soundness_check.sh`
-    creates the session before launching the node for exactly this reason. If you
-    assemble your own run directory, make sure the same ordering holds.
+!!! warning "The trace must capture startup"
+    The init events fire once, when a node is constructed. A trace that starts after
+    the node is already running shows that node's edges as `unmatched_nodes` or not
+    at all, which is not a real finding. The script opens the session before it
+    launches the node for this reason. If you assemble your own run, keep that order.
 
-!!! warning "Namespaced systems: static side not fully trustworthy"
-    The static extractor has a known internal-consistency bug for namespaced
-    systems (`_build_connections` derives LF port names from the fully-resolved
-    topic string while `_build_ports` derives them from the per-node relative
-    string, a known open bug). Until
-    that's fixed, treat `missing_from_model`/`unobserved_in_runtime` findings on a
-    namespaced system with extra skepticism, because a mismatch there can be a static-side
-    resolution bug rather than a genuine runtime discovery. The playground examples
-    this checker is exercised against today are all non-namespaced.
+!!! warning "Namespaced systems"
+    For systems that use namespaces, the static side can name ports by two different
+    spellings of a topic, so a `missing_from_model` or `unobserved_in_runtime` finding
+    can be an extraction artifact and not a real discovery. Treat such findings with
+    skepticism. The examples this checker is exercised on are not namespaced.
 
 !!! note "Advisory by default"
-    Like every `lf_eval` metric, `topology` never fails a run on its own.
-    `data["failed"]` and the CLI's non-zero exit only happen with
-    `--fail-on-missing-edge`/`--strict`.
+    `topology` never fails a run on its own. Only `--fail-on-missing-edge` or
+    `--strict` makes a finding change the exit code.
 
-!!! note "Runtime runs are not in GitHub CI (yet)"
-    No `docker compose` profile runs inside GitHub Actions today. LTTng-traced
-    example runs are real new infrastructure with real flake risk, deliberately
-    deferred. `scripts/soundness_check.sh` and the `soundness-check` compose
-    service are verified locally / in the dev container across the playground
-    example set, and a CI runtime job is a follow-up if that verification holds up.
+## Dynamic topic names (RCLLF-H004)
 
-## `topics.dynamic_name` (RCLLF-H004): the extraction-side half of this story
+The static side is only as good as the extractor's topic-name resolution.
+[RCLLF-H004](../reference/diagnostic-codes.md#rcllf-h004) warns about a publisher or
+subscription whose topic is not one plain string literal, for example
+`"prefix_" + std::to_string(id)`. `dynamic_topic_example` (under
+`packages/src/fixtures`) has such a publisher, and the checker reports one
+`missing_from_model` finding for it (the verdict line reads `FINDINGS: dynamic_topic_example/bringup ... topology mismatch detected`). See the [Support Matrix](support-matrix.md) for
+every registered feature.
 
-The soundness checker's static side is only as good as the extractor's topic-name
-resolution. `RCLLF-H004` (`topics.dynamic_name`, WARN) flags publishers/subscribers
-whose topic argument is not a lone resolvable string literal, including the
-concatenation case (`"prefix_" + std::to_string(id)`) that used to silently resolve
-to a *partial*, wrong topic name with no warning at all. See the [Support
-Matrix](support-matrix.md) for every module including this one.
+## See also
 
-## QoS hazards: the startup half
-
-The checker compares topology, not QoS. QoS hazards are found statically by
-`colcon lf-analyze` and checked again by the binding at startup on the effective
-QoS. `RCLLF-H001` (best effort) and `RCLLF-H002` (depth 1) run on the reader of every
-admitted and legacy correspondence edge, so a scenario overlay
-or a ROS parameter that changes a reader's QoS is still reported. See
-[RCLLF-H001](execution-config.md#rcllf-h001) and
-[RCLLF-H002](execution-config.md#rcllf-h002) for what stays static.
-
-## Related
-
-- [Support Matrix](support-matrix.md), every registered feature module, including
-  `topics.dynamic_name` (RCLLF-H004), which is the static-extraction half of this
-  same "don't silently under-report" story.
-- [Tracing](tracing.md), the general `lf-eval` trace → metrics → plots pipeline this
-  checker's `topology` metric is one member of.
+- [Support Matrix](support-matrix.md): the diagnostic codes, the static half of the
+  soundness story.
+- [Tracing](tracing.md): the `lf-eval` pipeline that the `topology` metric belongs to.
+- [QoS hazards](../reference/diagnostic-codes.md#rcllf-h001): checked statically and again at
+  startup. This checker compares topology, not QoS.

@@ -36,6 +36,14 @@ This was explicitly rejected (see Consequences below).
    the custom time source is attached to the `rclcpp::Context` and
    `use_sim_time=true` is set on each constructed node so `RCL_ROS_TIME` queries
    route through it.
+
+   *Note (v0.1.2): no class `LFTimeSource` exists; this mechanism was never
+   built. The decision stands with the mechanism described under
+   [Amendment 2026-10-09](#amendment-2026-10-09-how-node-clocks-are-actually-bound):
+   a non-component node's clock gets a ROS time override set to the current tag
+   before each reaction, and a component gets `use_sim_time=true` with a `/clock`
+   reader that no executor spins and that the binding feeds in memory. Both live
+   in `time_source.cpp`.*
 3. `std::chrono::steady_clock` and `RCL_STEADY_TIME` are **not** intercepted.
    User contract: callbacks must not use steady time for scheduling decisions.
    Using it for diagnostics (latency measurement, debug prints) is fine.
@@ -62,9 +70,8 @@ This was explicitly rejected (see Consequences below).
   DDS round-trip. Different nodes read slightly different "current" times.
 - Requires every node to have `use_sim_time=true` plumbed via launch args,
   adding configuration surface.
-- The ordering invariant proven on the reference system would become
-  conditional on the DDS round-trip staying within the clock-topic QoS deadline,
-  not an unconditional guarantee.
+- The ordering guarantee would become conditional on the DDS round-trip
+  staying within the clock-topic QoS deadline, not an unconditional guarantee.
 
 **Known limitations:**
 - `steady_clock::now()` in user callbacks is wall-clock. If a callback
@@ -72,6 +79,9 @@ This was explicitly rejected (see Consequences below).
   `create_wall_timer` call (at runtime, not at init), the resulting timer will
   not be registered with reactor-c. Document that all timers must be created at
   node construction time.
+
+  *Note (v0.1.2): the analyzer reports such a timer as
+  [RCLLF-H006](../../reference/diagnostic-codes.md#rcllf-h006).*
 - Third-party packages that internally poll `RCL_STEADY_TIME` for their own
   scheduling (e.g. `rcl_timer_is_ready` checks) are unaffected by this ADR,
   since their timers are cancelled anyway.
@@ -101,7 +111,7 @@ in-process consumer is ever told to use_sim_time against /clock under LF control
 
 ## Amendment 2026-10-09, How node clocks are actually bound
 
-A later audit found that the mechanism in Decision item 2 was never wired up.
+The mechanism in Decision item 2 was never wired up.
 `g_lf_clock` followed LF time, but every node read its own `RCL_ROS_TIME`
 clock, so `Node::now()` returned physical time inside reactions. The decision
 stands. The mechanism is now as follows.
@@ -151,12 +161,12 @@ it by its own call (`g_lf_clock` and `ros2_lf_attach_node_clock()`), and
 `rcl_clock_fini()` forgets it.
 
 The gate refuses only what it can identify reliably and fails open everywhere
-else (four review rounds settled this). Stopping a working program is worse than
+else. Stopping a working program is worse than
 missing a rare mistake. Rows marked "not covered, fails open" give the reason.
 
 | Case | Answer |
 |---|---|
-| Sleep on ROS time inside a reaction (`sleep_for`, `sleep_until`) on a clock the binding attached | Refused. The program stops with a FATAL message naming the node and callback, instead of hanging. The analyzer reports the call as RCLLF-H008. |
+| Sleep on ROS time inside a reaction (`sleep_for`, `sleep_until`) on a clock the binding attached | Refused. The program stops with a FATAL message naming the node and callback, instead of hanging. The analyzer reports the call as [RCLLF-H008](../../reference/diagnostic-codes.md#rcllf-h008) (sleep on the node's ROS clock). |
 | Not covered, fails open: sleep on ROS time inside a reaction on a component's clock (fed through its TimeSource) | Not refused, so it hangs as it would without the gate. The binding feeds the component's TimeSource and never holds its clocks, so it has no sign that a clock is LF driven. A clock that stands still for a while may still move later, so a stall alone does not prove it. The analyzer reports the call as RCLLF-H008. |
 | Not covered, fails open: sleep on ROS time in a constructor | The gate cannot tell the constructed node's own clock from another node's clock reliably, and a node built after LF time started would see its clock move. The sleep is allowed. The analyzer still reports it as RCLLF-H008. |
 | Sleep on a steady or system clock, or on ROS time from a thread the node starts itself | Allowed. The user thread waits for logical time and returns. |

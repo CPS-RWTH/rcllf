@@ -36,7 +36,19 @@ docker exec rcllf-bf bash -c 'source /opt/ros/jazzy/setup.bash && cd packages &&
 ```
 
 On the Orin NX the full workspace (45 packages) built in about
-15 minutes.
+15 minutes. Then run the pipeline in the same container, as on x86_64:
+
+```bash
+docker exec -it rcllf-bf bash -l
+# inside the container (the container start installed the rcllf tools):
+source /opt/ros/jazzy/setup.bash
+cd packages && source install/setup.bash
+colcon lf --package brake_fusion && source install/setup.bash
+```
+
+To use the Compose commands of the [Quickstart](index.md) instead, give the image the
+name Compose uses, `docker tag rcllf-arm64:deps ghcr.io/cps-rwth/rcllf:dev`, and follow
+the Quickstart from `docker compose run --rm dev` on.
 
 ## Floating point
 
@@ -52,13 +64,12 @@ machine code is unchanged.
 
 ## Pinning on Orin NX
 
-The two clusters share no L3 cache. The board scripts run the application and
-its stress-ng load on cluster 1 (cores 4-7) and leave cluster 0 (cores 0-3) to
-the OS, Docker and the LF RTI. They pin per process with `taskset`, not with a
-container cpuset, and record the cpusets in every run's `meta.json`.
+The two clusters share no L3 cache. For measurements, run the application (and any
+load generator) on cluster 1 (cores 4-7) and leave cluster 0 (cores 0-3) to the OS,
+Docker and the LF RTI. Pin per process with `taskset`, not with a container cpuset,
+for example `taskset -c 4-7 ros2 launch ...` inside the container.
 
 ## Two boards
 
-Two-board runs of the brake_fusion program (the RTI and one federate on each board)
-used a runner script that is not part of this release; start the federates by hand
-as in [Federation](../features/federation.md).
+The brake_fusion program also runs on two boards, with the RTI and one federate on each
+board. Start the federates by hand as in [Federation](../features/federation.md).

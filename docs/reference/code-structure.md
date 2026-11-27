@@ -1,7 +1,7 @@
 # Code Structure
 
 This page maps the repository's directories to the concepts they implement.
-Read it before navigating the source or extending a pipeline stage.
+Use it to find your way around the source before you extend a pipeline stage.
 
 ## Runtime packages (`packages/`)
 
@@ -22,7 +22,7 @@ that lets a Lingua Franca federate host ROS 2 node code. Key files:
 | `src/reaction_dispatch.cpp` | Reaction dispatch into ROS 2 callbacks |
 
 Read [Architecture](../design/architecture.md) for how the binding fits the
-pipeline, and [ros2_lf_binding API](ros2-lf-binding.md) for the API itself.
+pipeline, and [Binding Internals](ros2-lf-binding.md) for the API itself.
 `packages/lf-frame/ros2_lf_msgs/` carries the small set of interfaces the
 binding uses internally. `rcllf_plant` holds the simulation plants
 ([Plants](../features/plants.md)), among them the MuJoCo vehicle that `brake_fusion`
@@ -38,9 +38,12 @@ pipeline recreates them.
 
 | Directory | What it does | Docs |
 |---|---|---|
-| `tools/colcon_lf/` | Extraction and generation CLI (`colcon lf-analyze / lf-generate / lf-build / lf`). Its [README](https://github.com/CPS-RWTH/rcllf/blob/main/tools/colcon_lf/README.md) maps the modules and the tests. | [CLI Reference](cli.md), [Extraction](../design/extraction.md), [LF Code Generation](../design/lf-generation.md) |
+| `tools/colcon_lf/` | Extraction and generation CLI (`colcon lf-analyze / lf-generate / lf-build / lf`). Its [README](https://github.com/CPS-RWTH/rcllf/blob/main/tools/colcon_lf/README.md) maps the modules and the tests. | [CLI](cli.md), [Extraction](../design/extraction.md), [LF Code Generation](../design/lf-generation.md) |
 | `tools/lf_eval/` | Trace evaluation: reads LTTng/CTF traces and computes timing metrics. | [Tracing](../features/tracing.md) |
-| `tools/ros2lf/` | The `ros2 lf` command extension (`list`, `launch`, `scan`, `eval` and `report` verbs). | [CLI Reference](cli.md) |
+| `tools/ros2lf/` | The `ros2 lf` command extension (`list`, `launch`, `scan`, `eval` and `report` verbs). | [CLI](cli.md) |
+
+The benchmark orchestrator is not part of this repository. The method and the results are in the rcllf paper,
+[arXiv:2606.09203](https://doi.org/10.48550/arXiv.2606.09203), and the trace metrics it uses are computed by `tools/lf_eval/`.
 
 ## Runtime dependency
 

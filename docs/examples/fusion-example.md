@@ -42,10 +42,11 @@ SensorBNode --[fusion/b: SensorData]--> ApproxFusionNode --[fusion/approx_pairs]
 docker compose run --rm dev ros2 launch fusion_example bringup.launch.py
 ```
 
-Through the LF pipeline:
+Under rcllf, inside the dev container (`docker compose run --rm dev`):
 
 ```bash
-colcon lf --package fusion_example
+cd packages && source install/setup.bash
+colcon lf --package fusion_example && source install/setup.bash
 ros2 lf launch fusion_example bringup
 ```
 

@@ -7,6 +7,43 @@ dispatch. The source of truth is
 `tools/lf_eval/lf_eval/semantic/schema.py` mirrors it, and
 `tools/lf_eval/tests/semantic/test_schema_parity.py` fails when the two drift.
 
+## Produce one
+
+Trace a generated LF program (see [Tracing](../features/tracing.md#recording-a-trace)),
+then dump the `rcllf` events of the run with `babeltrace2`:
+
+```bash
+babeltrace2 output/experiments/trace_<timestamp>/ust | grep rcllf:dispatch_end
+```
+
+One line looks like this (a run of the generated `pubsub_example` program):
+
+```text
+[10:40:44.418221772] (+0.000004220) enzo rcllf:dispatch_end: { cpu_id = 21 }, { vpid = 2030779, vtid = 2030813, procname = "Bringup" }, { epoch = 15818350373098743036, cat = 4, seq = 2, dispatch_id = 1, outcome = 255, retained_id = 0, join_wait_ns = 0, callback_ran = 1, cutoff = -1, missing_hook = 0 }
+```
+
+The first brace holds the CPU, the second the contexts `docker/trace.sh` adds. The
+third holds the event fields: the three common fields (`epoch`, `cat`, `seq`) and the
+fields of `dispatch_end` from the table below. A stock ROS 2 run records no `rcllf`
+events. The provider also has two more groups, `rcllf_stop` and `rcllf_dds`. They are
+not recorded by `docker/trace.sh`.
+
+## Changes by version
+
+| Schema | Adds |
+|---|---|
+| 1.0 | the lifecycle, publication, delivery, sample, dispatch and cleanup events |
+| 1.1 | `lf_start`, external arrivals |
+| 1.2 | `cutoff` and `missing_hook` on `dispatch_end`, `ingress_callback_start` |
+| 1.3 | process ancestry |
+| 1.4 | run token |
+| 1.5 | stamp-anchored arrivals |
+| 1.6 | `actuation_late` |
+| 1.7 | `tf2_request`, `tf2_outcome` |
+| 1.8 | tf2 adapter and available interval fields |
+
+The sections after the event table explain the fields each version added.
+
 ## Common fields
 
 Every event starts with `epoch` (u64, the run epoch), `cat` (u8, category)
@@ -63,7 +100,7 @@ federation that is the start tag negotiated with the RTI, the same in every
 federate. Tags are measured from it. A schema 1.0 trace has no `lf_start`, so a reader falls back
 to the earliest observed tag and says so.
 
-## External arrivals (schema 1.1)
+## Fields added in 1.1: External arrivals
 
 Schema 1.1 also adds the event `external_arrival` and the entry kind
 `EXTERNAL_SUB`. A subscription on a topic declared in `external_topics` of
@@ -91,7 +128,7 @@ message with the subscription, so the binding runs no callback for it. Its
 `RCLLF_TRACE_CALLBACKS=1` the JSON log carries an `external_lifecycle_drop` event
 with the `rid` and `record_id`.
 
-## Cutoff and missing hook (schema 1.2)
+## Fields added in 1.2: Cutoff and missing hook
 
 Schema 1.2 adds two fields to `dispatch_end`, the LTTng copies of
 the `cutoff_elapsed` and `missing_hook` fields of the `trace_corr` JSON dispatch
@@ -112,7 +149,7 @@ no deadline or message lost handler, `SHUTDOWN` when shutdown had begun, and
 otherwise the first handler that ran, `DEADLINE` before `MESSAGE_LOST`. A schema
 1.1 trace has neither field, so a reader treats them as absent.
 
-## Process ancestry (schema 1.3)
+## Fields added in 1.3: Process ancestry
 
 Schema 1.3 adds the field `ancestry` to `run_begin`: the process's
 parent PID chain, read from `/proc` when `run_begin` is emitted, space separated,
@@ -121,7 +158,7 @@ this is how a trace reader links a publishing process to the launcher
 of its run, even when an intermediate shell or wrapper is not traced and has
 exited. A schema 1.2 trace has no `ancestry`, so a reader treats it as absent.
 
-## Run token (schema 1.4)
+## Fields added in 1.4: Run token
 
 Schema 1.4 adds the field `run_token` to `run_begin`: the value of
 the environment variable `RCLLF_RUN_TOKEN`, read once per process, or the empty
@@ -132,7 +169,7 @@ in the same trace session by its token, not by its PID, which the kernel reuses.
 The ancestry is then only a cross-check for a process without a token. A schema
 1.2 or 1.3 trace has no `run_token`; a reader treats it as absent.
 
-## Stamp-anchored arrivals (schema 1.5)
+## Fields added in 1.5: Stamp-anchored arrivals
 
 Schema 1.5 adds four fields to `external_arrival` and the code set
 `rcllf_trace_ext_disposition`. A topic declared with `anchor: stamp` in
@@ -150,7 +187,7 @@ its event is removed, with its own `arrival_physical_ns` and `stamp_ns`. A
 schema 1.1 to 1.4 trace has none of these fields; a reader treats every arrival
 as `ARRIVAL`.
 
-## Ingress callback starts (schema 1.2)
+## Fields added in 1.2: Ingress callback starts
 
 Schema 1.2 also adds the event `ingress_callback_start`. The ingress
 drain emits it each time it hands an infrastructure service request, such as
@@ -161,7 +198,7 @@ same call, but the event needs no environment variable. `node` is the ingress ke
 request, the `record` of the `ingress` JSON lines. `rid` is -1 because the drain
 is not a reaction of the user node.
 
-## Actuation lateness (schema 1.6)
+## Fields added in 1.6: Actuation lateness
 
 Schema 1.6 adds the event `actuation_late`. A topic with
 `publishers.<node>.<topic>.output_deadline_ns` in `execution.yaml` is checked in the
@@ -171,7 +208,7 @@ and is published anyway. `rid` is the publishing reaction, `topic` the resolved 
 `tag_time` and `tag_microstep` the reaction's tag (absolute), `physical_ns` the
 `lf_time_physical()` reading of the check. A schema 1.1 to 1.5 trace has no such event.
 
-## tf2 acquisition lookups (schema 1.7)
+## Fields added in 1.7: tf2 acquisition lookups
 
 Schema 1.7 adds the events `tf2_request` and `tf2_outcome`, the LTTng
 copies of the `RCLLF_TF2` `tf_request` and `tf_outcome` JSON lines that an
@@ -191,7 +228,7 @@ stamp-anchored `/tf` or `/tf_static` message whose transforms do not all carry o
 `header.stamp` is not admitted (it is never split or anchored at a guessed stamp). A
 schema 1.1 to 1.6 trace has none of these.
 
-## tf2 adapter and available interval (schema 1.8)
+## Fields added in 1.8: tf2 adapter and available interval
 
 Schema 1.8 appends three fields to `tf2_request` and two to `tf2_outcome`,
 and the JSON lines carry the same values (`adapter`, `oldest_common`, `latest_common`):
@@ -254,7 +291,7 @@ emits `sample(edge, gid, ordinal, retained_id)`. The subscriber dispatch emits
 `dispatch_begin(edge, gid, ordinal)` and `dispatch_end(retained_id)` consuming it.
 Every expectation ends in exactly one `terminal`.
 
-## Status codes (D4)
+## Status codes
 
 Integrity, per epoch and channel: `no_run_manifest`, `discarded:<channel>`,
 `discards_unknown:<channel>`, `crosscheck_discard`, `missing_producer:<executable>`,

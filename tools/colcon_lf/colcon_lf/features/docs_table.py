@@ -81,6 +81,14 @@ _DEFAULT_OUT = (
 )
 
 
+_SUPPORT_ORDER = (Support.SUPPORTED, Support.WARN, Support.REJECT, Support.STUB)
+
+
+def _row_order(feature_id: str) -> tuple[int, str]:
+    module = REGISTRY[feature_id]
+    return (_SUPPORT_ORDER.index(module.support), module.title.lower())
+
+
 def _severity_text(module: FeatureModule, code: str) -> str:
     severity: Severity = module.severity[code]
     return f"{code} ({severity.value})"
@@ -137,48 +145,43 @@ def render() -> str:
     lines.append("# Support Matrix")
     lines.append("")
     lines.append(
-        "This table is generated from the feature registry "
-        "(`tools/colcon_lf/colcon_lf/features/registry.py`) by "
-        "`python3 -m colcon_lf.features.docs_table`. Every row corresponds to one "
-        "registered `FeatureModule`. Every playground example listed here is "
-        "analyzed and generated in CI and asserted to produce the stated outcome (see "
-        "`tools/colcon_lf/tests/playground/`). Because the table is regenerated "
-        "and drift-checked in CI, a support claim on this page cannot go stale "
-        "the way a hand-written one could. The registry's diagnostic codes are "
-        "the static-analysis half of the soundness story, and the "
-        "[Soundness Checker](soundness.md) checks the runtime half by tracing a "
-        "real run and diffing it against the extracted model."
+        "Which ROS 2 patterns rcllf converts, which it warns about and which it "
+        "refuses. Each row is one feature. Read the Support column first: "
+        "**Supported** converts, **Warns** converts and prints a diagnostic, "
+        "**Rejected** stops generation with an error. The Evidence column says how "
+        "far testing reaches (legend below). The Playground example column names a "
+        "package under `packages/src` or `packages/src/fixtures` that shows the "
+        "behavior; the first container start builds only the learning-path examples, "
+        "so build the others with `docker compose run --rm -e "
+        "ENTRYPOINT_PACKAGES=<package> dev` (see the [Docker reference]"
+        "(../reference/docker.md)). Diagnostic codes are explained in the "
+        "[diagnostic code catalog](../reference/diagnostic-codes.md). The "
+        "[Soundness Checker](soundness.md) checks the runtime half by tracing a real "
+        "run and comparing it with the extracted model."
     )
     lines.append("")
     lines.append(MIDDLEWARE_STATEMENT)
     lines.append("")
     lines.append(DEPLOYMENT_STATEMENT)
     lines.append("")
-    lines.append(
-        "The Evidence column says how far the evaluation evidence reaches for each "
-        "feature. It comes from `tools/colcon_lf/colcon_lf/features/evidence.py`, "
-        "and the drift check fails when that file and the registry cover different "
-        "features. The classes are these."
-    )
+    lines.append("**Evidence** says how the claim was tested:")
     lines.append("")
     for evidence in Evidence:
         lines.append(f"- **{evidence.value}**: {EVIDENCE_MEANING[evidence]}.")
     lines.append("")
     lines.append(
         "| Feature | Support | Evidence | Limits | Diagnostic codes | Playground example "
-        "| Expected outcome | Notes |"
+        "| Expected outcome | Details |"
     )
     lines.append("|---|---|---|---|---|---|---|---|")
-    for feature_id in sorted(REGISTRY):
+    for feature_id in sorted(REGISTRY, key=_row_order):
         lines.append(_table_row(REGISTRY[feature_id]))
     lines.append("")
     lines.append("## Stated limits")
     lines.append("")
     lines.append(
         f"These are the stated limits L1 to {list(LIMITS)[-1]}. Each one bounds the "
-        "features that cite it in the Limits column. They come from "
-        "`tools/colcon_lf/colcon_lf/features/limits.py`, and the drift check fails "
-        "when a feature cites a limit that file does not hold."
+        "features that cite it in the Limits column."
     )
     lines.append("")
     lines.append("| Limit | Statement |")

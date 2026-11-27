@@ -3,7 +3,7 @@
     schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>rcllf_message_filters</name>
-  <version>0.1.1</version>
+  <version>0.1.2</version>
   <description>
     message_filters policies for rcllf. Holds the Bounded Nearest-to-Anchor
     (BNA) synchronizer: a pure decision engine, a replay tool for checking it

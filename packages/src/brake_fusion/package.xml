@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>brake_fusion</name>
-  <version>0.1.1</version>
+  <version>0.1.2</version>
   <description>Emergency braking with radar/camera fusion: the running example that contrasts timestamps with logical time.</description>
   <maintainer email="harun.teper@cps.rwth-aachen.de">Harun Teper</maintainer>
   <license>Apache-2.0</license>

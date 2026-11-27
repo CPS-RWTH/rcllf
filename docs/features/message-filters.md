@@ -7,10 +7,35 @@ reaction, and the policy and your callback run inside it. rcllf does not reimple
 the policy. It makes the order in which the policy sees its inputs a logical order, so
 a converted run gives the same tuples every time.
 
-This page describes what is claimed for these synchronizers (the domain `mf-sync/1`),
-what generation refuses and why, and how to check the claim with the oracle.
-The rcllf-specific `BoundedNearestToAnchor` policy has its own page,
-[BNA Synchronizer](bna-synchronizer.md).
+This page shows how to try it, what is claimed (the supported domain, named `mf-sync/1` for its version), what
+generation refuses and why, and how the claim is checked against an oracle (a plain
+run of the real library, used as the expected answer). The rcllf-specific
+`BoundedNearestToAnchor` policy has its own page, [BNA Synchronizer](bna-synchronizer.md).
+
+## Try it
+
+`fusion_example` has an `ExactTime` and an `ApproximateTime` node over the same two
+sensor topics. It is part of the first-start build, so this works in a plain
+container:
+
+```bash
+docker compose run --rm dev colcon lf --package fusion_example
+```
+
+A node like `ExactFusionNode` needs no change for the conversion:
+
+```cpp
+sub_a_.subscribe(this, "fusion/a");
+sub_b_.subscribe(this, "fusion/b");
+sync_ = std::make_shared<message_filters::Synchronizer<SyncPolicy>>(
+  SyncPolicy(10), sub_a_, sub_b_);
+sync_->registerCallback(
+  std::bind(&ExactFusionNode::sync_callback, this,
+    std::placeholders::_1, std::placeholders::_2));
+```
+
+The exact generated package names are the directories under `packages/lf-generated/`;
+see [Generated package names](../reference/cli.md#generated-package-names).
 
 ## What is claimed
 
@@ -25,7 +50,7 @@ executor scheduling and branch work. The claim is therefore "matches message_fil
 | Domain `mf-sync/1` | Requirement |
 |---|---|
 | Library | `message_filters` `4.11.17-*` and `rclcpp` `28.1.22-*` (Debian build suffix free) |
-| Shape | one `Synchronizer`, two plain `message_filters::Subscriber<M>` inputs, one `registerCallback` (the form [RCLLF-H003](execution-config.md#rcllf-h003) admits) |
+| Shape | one `Synchronizer`, two plain `message_filters::Subscriber<M>` inputs, one `registerCallback` (the form [RCLLF-H003](../reference/diagnostic-codes.md#rcllf-h003) admits) |
 | Policy | `ExactTime` or `ApproximateTime` with library defaults: age penalty 0.1, no `setMaxIntervalDuration`, no `setInterMessageLowerBound` |
 | Queue size | a literal or a parameter that resolves to an integer >= 1 |
 | Inputs | each input an admitted correspondence edge (publisher inside the analyzed system, see the Publication correspondence row of the [Support Matrix](support-matrix.md)), both with one common link delay |
@@ -39,7 +64,7 @@ classification is derived offline from the correspondence dispatch records.
 ## What generation refuses
 
 The analyzer admits the synchronizer shape. Generation then checks the
-inputs and refuses with [RCLLF-H003](execution-config.md#rcllf-h003) and a named
+inputs and refuses with [RCLLF-H003](../reference/diagnostic-codes.md#rcllf-h003) and a named
 reason when an input would arrive in wall-clock order:
 
 | Diagnostic | Cause | What to do |
@@ -100,11 +125,32 @@ converted. Under stock ROS 2 the join's stream changes with the assignment.
 
 ### Running it
 
-Inside the dev container, with the workspace built:
+`sync_oracle_showcase` is not in the first-start build, so name it in
+`ENTRYPOINT_PACKAGES` (see the [Docker reference](../reference/docker.md)). Without the
+selection `colcon lf` stops with `'sync_oracle_showcase/versions.hpp' file not found`
+and `Analysis failed`; the `apt-get install` hint under it does not help, because the
+header is part of this workspace. Build, capture a converted run of corpus B8, run
+the oracle on the same corpus and compare. In a shell in the workspace
+(`docker compose run --rm -e ENTRYPOINT_PACKAGES=sync_oracle_showcase dev bash`, then
+`cd /workspace/packages`):
 
 ```bash
 colcon lf --package sync_oracle_showcase
-cd tools/colcon_lf && python -m pytest tests/runtime/test_runtime_sync_oracle.py -v
+source install/setup.bash
+O1=install/sync_oracle_showcase/lib/sync_oracle_showcase/sync_oracle
+C=src/sync_oracle_showcase/corpora/b8.yaml
+SYNC_CORPUS=$PWD/$C RCLLF_TRACE_CALLBACKS=1 timeout -s INT 12 \
+  ros2 launch lf_generated_sync_oracle_showcase_corpus lf_corpus.launch.py > run.log 2>&1
+$O1 --corpus $C --policy exact --queue 1 > o1_exact_q1.jsonl
+python3 -m lf_eval.sync_oracle --corpus $C --log run.log --o1 exact_q1=o1_exact_q1.jsonl
+```
+
+The capture stops after 12 seconds (`timeout` exits 124, which is expected). The
+comparator prints one line per instance and exits 0 when all are compatible. This
+run printed:
+
+```text
+exact_q1: compatible
 ```
 
 Set `RCLLF_SYNC_RUNS=20` for the 20-run determinism check of F1, B8 and P3.

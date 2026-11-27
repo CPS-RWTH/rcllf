@@ -1,84 +1,117 @@
 # Visualizations
 
-The extraction tool generates four types of Graphviz DOT graphs, rendered to PDF and/or SVG. All visualizations read from the JSON output (not from dataclasses directly), ensuring the JSON is the single source of truth.
+`colcon lf-analyze` draws the system it extracted as Graphviz graphs. All of them are
+rendered from the extracted `system.json`, so what you see is what the generator
+will convert. Use them to check that rcllf found every node, topic and callback
+you expect before you generate code.
 
-## Launch Graph
+## Generating visualizations
 
-**File:** `viz/launch_graph.{pdf,svg}`
+```bash
+docker compose run --rm dev colcon lf-analyze --package pubsub_example
+```
 
-Shows the launch file include hierarchy as a DAG:
+One run analyses every launch file of the package (four for `pubsub_example`) and
+writes each result to `packages/lf-analysis/<package>/<launch-stem>/`. The graphs
+are in the `viz/` folder there, for example
+`packages/lf-analysis/pubsub_example/bringup/viz/system_graph.svg`. Open the SVG
+files in a browser.
 
-- **Blue boxes:** Launch files (package + filename)
-- **Yellow ellipses:** ROS 2 nodes (package + node name)
-- **Dashed boxes:** GroupActions with namespace
-- **Edges:** Include relationships
+The format is chosen with `--format`:
 
-This graph answers: "What does this launch file start, and how are things organized?"
+| Option | Writes |
+|---|---|
+| `--format all` (the default) | the JSON model and SVG graphs |
+| `--format svg` | the JSON model and SVG graphs |
+| `--format pdf` | the JSON model and PDF graphs (`viz/topology.svg` and `launch/launch_graph.svg` stay SVG) |
+| `--format json` | the JSON model only, no `viz/` folder |
 
-## Node Internals
+For `pubsub_example/bringup`, the default writes:
 
-**Files:** `viz/nodes/{node_name}_internals.{pdf,svg}`
+```text
+viz/launch_graph.svg
+viz/comm_graph.svg
+viz/system_graph.svg
+viz/topology.svg
+viz/nodes/publisher_node_internals.svg
+viz/nodes/subscriber_node_internals.svg
+```
+
+With `--format pdf` the same files appear as PDF, except `viz/topology.svg`. To
+redraw the graphs from an existing `system.json` without extracting again, add
+`--viz-only`.
+
+The `dot` binary of the `graphviz` package draws them. It is installed in the
+container. Outside the container, install it with `sudo apt install graphviz`
+(Ubuntu/Debian) or `brew install graphviz` (macOS).
+
+## Launch graph
+
+**File:** `viz/launch_graph.svg` (also written to `launch/launch_graph.svg`)
+
+Shows the launch file include hierarchy as a graph:
+
+- **Blue boxes:** launch files (package and file name)
+- **Yellow ellipses:** ROS 2 nodes (package and node name)
+- **Dashed boxes:** group actions with a namespace
+- **Edges:** include relationships
+
+It answers: "What does this launch file start, and how are things organized?"
+
+## Node internals
+
+**Files:** `viz/nodes/<node_name>_internals.svg`
 
 Shows one node's internal structure:
 
-- **Diamonds:** Triggers (timers, subscriptions, service servers, action servers) with callback group annotations
-- **Green boxes:** Callbacks with parameter signatures
-- **Salmon boxes:** Publishers
-- **Pink boxes:** Service clients
-- **Purple boxes:** Action clients
-- **Gray text:** Member variables with read/write edges
-- **Yellow note:** Declared parameters with types and defaults
-- **Edges:** Trigger->callback (triggers), callback->publisher (publish), callback->variable (reads/writes)
+- **Diamonds:** triggers (timers, subscriptions, service servers, action servers)
+  with callback group annotations. Service servers are pink.
+- **Green boxes:** callbacks with parameter signatures
+- **Salmon boxes:** publishers
+- **Pink boxes:** service clients
+- **Purple boxes:** action clients
+- **Gray text:** member variables with read and write edges
+- **Yellow note:** declared parameters with types and defaults
+- **Edges:** trigger to callback, callback to publisher, callback to variable
 
-This graph answers: "What does this node do internally? What triggers what?"
+It answers: "What does this node do internally? What triggers what?"
 
-## Communication Graph
+## Communication graph
 
-**File:** `viz/comm_graph.{pdf,svg}`
+**File:** `viz/comm_graph.svg`
 
 Shows inter-node communication:
 
-- **Blue boxes:** Nodes
-- **Solid black edges:** Topic connections (labeled with topic name + message type)
-- **Dashed blue edges:** Service connections (client -> server)
-- **Bold purple edges:** Action connections (client -> server)
+- **Blue boxes:** nodes
+- **Solid black edges:** topic connections, labeled with topic name and message type
+- **Dashed blue edges:** service connections (client to server)
+- **Bold purple edges:** action connections (client to server)
 
-This graph answers: "How do nodes talk to each other?"
+It answers: "How do nodes talk to each other?"
 
-## System Graph
+## System graph
 
-**File:** `viz/system_graph.{pdf,svg}`
+**File:** `viz/system_graph.svg`
 
-Unified hierarchical view combining all layers:
+A unified view of all layers:
 
-- **Blue cluster borders:** Launch file scopes
-- **Dashed gray clusters:** Namespace groups
-- **Yellow record boxes:** Nodes with summary (timer count, pub/sub topics, services)
-- **Inter-node edges:** Same as communication graph (topics, services, actions)
+- **Blue cluster borders:** launch file scopes
+- **Dashed gray clusters:** namespace groups
+- **Yellow record boxes:** nodes with a summary (timer count, pub/sub topics, services)
+- **Inter-node edges:** the same as the communication graph
 
-This graph answers: "What does the full system look like?"
+It answers: "What does the full system look like?"
 
-## Generating Visualizations
+## Topology
 
-```bash
-# All formats (PDF + SVG)
-colcon lf-analyze --package pubsub_example --format all
+**File:** `viz/topology.svg`
 
-# SVG only
-colcon lf-analyze --package pubsub_example --format svg
+A fifth picture, drawn in the style of an LF program: one box per node with its
+ports and reactions, and wires for the topics between them. It is always written
+as SVG. Its layout suits linear pipelines. On systems with many fan-in and fan-out
+edges the wires can overlap, so use the system graph there.
 
-# JSON only (skip visualizations)
-colcon lf-analyze --package pubsub_example --format json
-```
+## Limits
 
-## Requirements
-
-Visualization rendering requires the `graphviz` system package (provides the `dot` binary). It is pre-installed in the Docker dev image. For local use:
-
-```bash
-# Ubuntu/Debian
-sudo apt install graphviz
-
-# macOS
-brew install graphviz
-```
+Some extracted fields (remappings, launch arguments, composable-container
+membership) are not drawn yet. They are still in `system.json`.

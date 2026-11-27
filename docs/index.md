@@ -22,10 +22,11 @@ carries the messages over DDS.
 
 ## Try it
 
-With Git, Docker and Docker Compose on an x86_64 Linux host:
+With Git, Docker and Docker Compose on an x86_64 Linux host
+([Installation and Platforms](getting-started/installation.md) covers the other setups):
 
 ```bash
-git clone --branch v0.1.1 https://github.com/CPS-RWTH/rcllf.git
+git clone --branch v0.1.2 https://github.com/CPS-RWTH/rcllf.git
 cd rcllf
 git submodule update --init third_party/reactor-c
 docker compose build dev
@@ -78,8 +79,12 @@ The exact guarantees and their conditions:
 
 ## Next
 
+- [How rcllf Works](getting-started/how-rcllf-works.md): what rcllf reads, what it
+  generates, and what runs where, before you look at the files.
 - [Your First LF Run](getting-started/first-lf-run.md): the same example step by step,
   with the node source next to the LF program rcllf generated from it.
+- [Example Packages](examples/index.md): one small package per ROS 2 pattern, each
+  run as stock ROS 2 and under rcllf.
 - [Bring Your Own Code](guides/bring-your-own-code.md): convert your own package, in
   this checkout or in a workspace of your own.
 - [Design](design/design-principles.md): why rcllf exists, its tradeoffs, and how it

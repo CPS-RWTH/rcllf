@@ -5,8 +5,8 @@
 
 ## Context
 
-The lfc path requires a shared vocabulary between two independently-compiled
-artefacts:
+The generated program needs a shared vocabulary between two independently
+compiled artefacts:
 
 1. **The `.lf` source** (and the C++ it compiles into): reaction bodies call
    `ros2_lf_invoke_timer(self, RID_X)` where `RID_X` is a compile-time integer.
@@ -30,13 +30,21 @@ change unless `system.json` changes.**
    (libclang AST pre-order, the order `clang_parser.py` visits declarations).
 3. Assign the next available integer, starting from 0.
 
-Note (2026-10-21): step 2 describes the plan of this record. The generator
-assigns RIDs in the declaration order of each node's reactor, which puts subscription
-callbacks before timer callbacks (source order within each group), and
-`execution.yaml` `reaction_order: timers_first` puts timer callbacks first. So the RIDs
-of a node depend on `system.json` and on that key.
-`timers_first` is the default, so timer callbacks come first unless a node sets
-`reaction_order: subscriptions_first`.
+*Note (v0.1.2): step 2 describes the plan of this record. The generator assigns
+RIDs in the declaration order of each node's reactions: egress flush reactions of
+cross-federate edges first, then timer callbacks before subscription callbacks
+(the default `reaction_order: timers_first`; `subscriptions_first` reverses the
+two), each in C++ source order, then service and action callbacks. A class with
+two or more instances gets one RID range per instance. The RIDs of a node
+therefore depend on `system.json` and on `reaction_order`. For `pubsub_example`
+the generated header reads:*
+
+```c
+#define RID_PublisherNode_timer_callback 0
+#define RID_SubscriberNode_topic_callback 1
+
+#define RID_COUNT 2
+```
 
 The resulting mapping is emitted as `#define RID_<NodeClass>_<callback>` macros
 in `ros2_lf_reaction_ids.h` and as `RidEntry` registrations in
@@ -73,8 +81,7 @@ rebuilding.
 
 - RIDs are small integers, so `g_handle_table` is a flat vector with O(1) lookup,
   no hashing, no string comparison at reaction-dispatch time.
-- Regeneration is cheap and deterministic. Tools that diff `system.json` before
-  regenerating (future work) can skip regeneration when nothing changed.
+- Regeneration is cheap and deterministic.
 - The macro names (`RID_<NodeClass>_<callback>`) serve as human-readable
   documentation in generated reaction bodies.
 
@@ -87,6 +94,5 @@ rebuilding.
 - There is no versioning of the RID table. If a binary built against an old
   `ros2_lf_reaction_ids.h` is run with a binding library populated from a new
   `ros2_lf_reaction_ids_init.cpp`, dispatch will silently invoke the wrong
-  callbacks. The diagnostic is unambiguous (`[WARN] ros2_lf_bind_node: no
-  loaded component matches class ...`) but not fatal. Future work: embed a
-  hash of `system.json` in both artefacts and assert equality at startup.
+  callbacks. The diagnostic is unambiguous (`ros2_lf_bind_node: no loaded
+  node matches class '...'`) but not fatal.

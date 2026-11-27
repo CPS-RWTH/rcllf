@@ -3,11 +3,14 @@
 Run the bundled `pubsub_example` under rcllf and check that it worked. The shortest
 path is first; the sections after it explain each step and the plain ROS 2 run to
 compare with. [Your First LF Run](first-lf-run.md) then opens every file rcllf
-generates along the way.
+generates along the way. New to Lingua Franca? [How rcllf Works](how-rcllf-works.md)
+explains the pieces in one page, and the [Glossary](../design/glossary.md) defines the
+LF terms used here.
 
 ## Supported setup
 
-- An x86_64 Linux host with Docker and about 8 GB of free memory (the one tested path).
+- An x86_64 Linux host with Docker and about 8 GB of free memory (the one tested path;
+  [Installation and Platforms](installation.md) covers the others).
 - ROS 2 Jazzy with C++ (`rclcpp`) nodes and a Python launch file.
 - Fast DDS (`rmw_fastrtps_cpp`), which the container sets.
 - All nodes of a launch file in one process, or one process per node
@@ -22,7 +25,7 @@ You need Git, [Docker](https://docs.docker.com/get-docker/) 20.10+ and
 [Docker Compose](https://docs.docker.com/compose/install/) v2 or later. On the host:
 
 ```bash
-git clone --branch v0.1.1 https://github.com/CPS-RWTH/rcllf.git
+git clone --branch v0.1.2 https://github.com/CPS-RWTH/rcllf.git
 cd rcllf
 git submodule update --init third_party/reactor-c
 docker compose build dev
@@ -30,7 +33,7 @@ docker compose run --rm dev
 ```
 
 The last command opens a shell in the container (the first start builds the runtime
-and the examples, a few minutes). In that shell:
+and the learning-path examples, which takes several minutes). In that shell:
 
 ```bash
 cd packages && source install/setup.bash
@@ -49,7 +52,12 @@ Summary: 4 packages finished [...]
 ```
 
 `pubsub_example` has four launch files, and each becomes its own generated program
-package. The stderr output is the Lingua Franca compiler (`lfc`) printing its `info:`
+package, named `lf_generated_<package>_<system>`: `<system>` is the launch file stem
+with the underscores removed, in lower case, so `bringup.launch.py` gives
+`lf_generated_pubsub_example_bringup`. The exact names are the directories under
+`packages/lf-generated/`; see
+[Generated package names](../reference/cli.md#generated-package-names).
+The stderr output is the Lingua Franca compiler (`lfc`) printing its `info:`
 progress lines, not an error. The configure step writes a default execution
 configuration (`packages/lf-analysis/pubsub_example/<launch file>/config/execution.yaml`); you do not need
 to edit it for this example. The launch then prints
@@ -70,11 +78,14 @@ Three things say it worked:
 
 - Both nodes run in **one** process, `Bringup-1`: the generated LF program.
 - The two `Bound` lines: rcllf attached the generated program to the node's timer and
-  subscription callbacks. They are startup log lines and may come in either order.
+  subscription callbacks. Each callback gets a number, its reaction ID
+  ([RID](../design/glossary.md#rid-reaction-id)). They are startup log lines and may
+  come in either order.
 - Every `Publishing:` line is followed by an `I heard:` line with the **same** values,
   counting up by one every 500 ms. The `admitted edge` line says this topic carries
   publication correspondence: the subscriber gets exactly the sample of the publish at
-  the same logical time, and a missing sample would be reported instead of skipped.
+  the same [logical time](../design/glossary.md#logical-time), and a missing sample
+  would be reported instead of skipped.
 
 Stop it with Ctrl-C. To check a saved log of this run mechanically, run
 `python3 scripts/check_tutorial_output.py <log>` from the checkout, on the host or in
@@ -101,18 +112,18 @@ means the log passed; on a failure it also prints a `mismatch:` line and exits 1
 
 ### The source and the image
 
-`--branch v0.1.1` checks out the release; drop it to follow the default branch. The
+`--branch v0.1.2` checks out the release; drop it to follow the default branch. The
 `git submodule` line fetches the Lingua Franca C runtime (`reactor-c`), which the
 container builds from. If you skip it, the container stops at start and prints that
 same command.
 
 `docker compose build dev` builds the image with ROS 2 Jazzy, the Lingua Franca
-compiler and the rcllf tools. Instead of building it, you can pull the image built
+compiler (`lfc`) and the rcllf tools. Instead of building it, you can pull the image built
 from the same release and give it the name Compose uses:
 
 ```bash
-docker pull ghcr.io/cps-rwth/rcllf:0.1.1-deps
-docker tag ghcr.io/cps-rwth/rcllf:0.1.1-deps ghcr.io/cps-rwth/rcllf:dev
+docker pull ghcr.io/cps-rwth/rcllf:0.1.2-deps
+docker tag ghcr.io/cps-rwth/rcllf:0.1.2-deps ghcr.io/cps-rwth/rcllf:dev
 ```
 
 Use the image of the release you checked out: the container builds your checkout's
@@ -126,22 +137,17 @@ target (see the [Docker reference](../reference/docker.md)).
 
 ### The first start
 
-On its first start, `docker compose run --rm dev` builds the runtime and the example
-packages, then drops you into a shell in `/workspace` (your checkout, mounted). Later
+On its first start, `docker compose run --rm dev` builds the runtime and the
+learning-path examples (`pubsub_example`, `timer_example`, `service_example`,
+`lifecycle_example`, `fusion_example`, `brake_fusion` and what they depend on), then
+drops you into a shell in `/workspace` (your checkout, mounted). Later
 starts build again only when a file under `packages/src`, `packages/lf-frame` or
 `packages/lf-generated` changed since the last build. The generated packages count:
 the first start after `colcon lf` rebuilds them once (about 20 s), the next one skips
 the build.
 
-How long this takes, with the base image of the Dockerfile
-(`mcr.microsoft.com/devcontainers/base:ubuntu-24.04`) already pulled and no build
-cache (the build still downloads ROS 2 Jazzy through `apt`):
-`docker compose build dev` took 2 min 46 s to 3 min 9 s, the first start 3 min 27 s to
-3 min 59 s (10 packages), and the example below printed its first output 6 min 19 s to
-7 min 44 s after `git clone`. Two runs on x86_64 produced this range (2026-11-16 and
-2026-11-17). The slower run used an AMD Ryzen 9 5900X host (12 cores, 24 threads) and limited the
-container to 6 CPUs and 8 GB of memory, with `make -j4` and two colcon workers. A
-machine with fewer cores takes longer. Without the base image, add its download.
+On a desktop x86_64 host, `docker compose build dev` and the first start take a few
+minutes each; a machine with fewer cores takes longer.
 
 The first start also installs the rcllf Python tools (`colcon_lf`, `ros2lf`,
 `lf_eval`) with `pip install -e`, so about 60 lines of pip output scroll past once;
@@ -155,8 +161,10 @@ Two settings you may want:
   your network, pick your own: `ROS_DOMAIN_ID=37 docker compose run --rm dev`. Compose
   forwards `ROS_DOMAIN_ID` from the host, but not `ENTRYPOINT_PACKAGES`: pass that one
   with `-e`.
-- `docker compose run --rm -e ENTRYPOINT_PACKAGES=all dev` builds every package in the
-  workspace at start, not only the runtime and the examples. See the
+- An example outside that set needs its name at start, for instance
+  `docker compose run --rm -e ENTRYPOINT_PACKAGES="action_example" dev`; each example
+  page shows its command. `-e ENTRYPOINT_PACKAGES=all` builds every package in the
+  workspace. See the
   [Docker reference](../reference/docker.md#entrypoint).
 
 ## Compare with plain ROS 2

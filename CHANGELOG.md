@@ -5,6 +5,42 @@ This file lists what each rcllf release contains. The format follows
 [Semantic Versioning](https://semver.org/). Before 1.0.0, a minor release may change the
 command line, the generated code and the configuration files.
 
+## [0.1.2] - 2026-11-27
+
+Documentation release. Five reviewers read every page of the 0.1.1 user documentation
+against what the tools print and what the code does, and ran the commands the pages
+show. 0.1.2 fixes what they found and reorganizes the site. The generated code, the
+runtime and the command line are unchanged.
+
+### Added
+
+- New pages: How rcllf Works, Installation, FAQ, Configure Execution, Publication
+  Correspondence, Diagnostic Codes (every `RCLLF-H` and `RCLLF-R` code with its meaning
+  and what to do) and Environment Variables.
+
+### Changed
+
+- Navigation: Getting Started, Guides, Examples, Concepts, Features, Reference, Project.
+  Page addresses did not change, so existing links keep working.
+- The `execution.yaml` page is now a reference only; the step-by-step part moved to the
+  Configure Execution guide.
+- Every example page has the same four parts: what it shows, the stock ROS 2 run, the
+  rcllf run, and what to look at. Examples that the first container start does not build
+  show their command with `-e ENTRYPOINT_PACKAGES=<package>`.
+- The fast mode, plants and tracing pages were rewritten against what the tools do.
+
+### Fixed
+
+- Generated package names: the pages now give the real rule,
+  `lf_generated_<package>_<system>`, where `<system>` comes from the launch file name.
+- `colcon lf-analyze` writes SVG by default; PDF needs `--format pdf`.
+- The Concepts pages describe the code the generator writes today.
+- Known limits are stated where they apply: a federation that stops at an LF `--timeout`
+  fails its end-of-run check (stop it with Ctrl-C instead), and fast mode does not run
+  federations.
+- Development-internal text (tracker numbers, plan codes, packages that are not part of
+  the release) was removed from the user pages.
+
 ## [0.1.1] - 2026-11-26
 
 Documentation fixes from a first-time-user test of 0.1.0: two testers followed the

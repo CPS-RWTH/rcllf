@@ -115,7 +115,11 @@ colcon lf-generate --system-json lf-analysis/pubsub_example/bringup/system.json
 ==> All 1 system(s) generated successfully
 ```
 
-The last line is a complete, buildable colcon package. Open its copy of the
+The last line is a complete, buildable colcon package. Its name is
+`lf_generated_<package>_<system>`, where `<system>` is the launch file stem with the
+underscores removed, in lower case: `bringup.launch.py` gives `bringup`. The exact
+names are the directories under `packages/lf-generated/`; see
+[Generated package names](../reference/cli.md#generated-package-names). Open its copy of the
 program, `lf-generated/lf_generated_pubsub_example_bringup/lf/Bringup.lf` (the same
 file as `lf-analysis/pubsub_example/bringup/lf/Bringup.lf`). A *reactor* is LF's
 component (the counterpart of a node) and a *reaction* is a block of code the
@@ -211,16 +215,18 @@ This one line replaces the DDS topic as the thing that decides order. The
 message itself still travels through ROS 2; the connection carries the count from
 `corr_e0`, and the subscriber's reaction delivers the matching messages to your
 `topic_callback`. The connection has no `after` clause: the subscriber's reaction
-runs at the same *logical time* as the publisher's, and LF runs it after the
-publisher's reaction because one reads the port the other writes. Logical time
-is LF's model of when things happen, which the runtime advances independently of
-the wall clock. No delay is the default, because neither `system.json`'s
+runs at the same [*logical time*](../design/glossary.md#logical-time) as the
+publisher's, and LF runs it after the publisher's reaction because one reads the port
+the other writes. (The delivery to `topic_callback` goes through a zero-delay logical
+action, so it runs one [microstep](../design/glossary.md#microstep) later, still at the same
+logical time.) Logical time is LF's model of when things happen, which the runtime
+advances independently of the wall clock. No delay is the default, because neither `system.json`'s
 `after_delay_ns` (still `null`, see step 2) nor a `--after-delay` flag set one.
 See [the `after`-delay contract](../design/time-and-coordination.md#why-after-delays-are-a-let-style-contract-not-a-latency-measurement)
 for what a delay means and [CLI Reference](../reference/cli.md#colcon-lf-generate)
 for how to set one.
 
-## 4. Build: hand the program to `lfc`
+## 4. Build: compile the LF program
 
 ```bash
 colcon build --packages-select lf_generated_pubsub_example_bringup
@@ -302,13 +308,15 @@ fixes it.
 !!! tip "`colcon lf` runs this pipeline in one command"
     `colcon lf --package pubsub_example` runs analyze, configure, generate and build
     in one go and produces the same `lf_generated_pubsub_example_bringup` package. The
-    configure step writes a default `config/execution.yaml` next to each analysis; this
-    tutorial generates without one, which gives the same defaults. Start it with
+    configure step writes a default `config/execution.yaml` next to each analysis, and
+    `colcon lf-generate` reads it when it is there (after the Quickstart it is). The
+    default file sets nothing, so the program is the same with or without it. Start it with
     `ros2 lf launch pubsub_example bringup`. See
     [CLI Reference](../reference/cli.md#colcon-lf-all-in-one).
 
 ## Next steps
 
+- [How rcllf Works](how-rcllf-works.md), the whole pipeline on one page.
 - [Example Packages](../examples/index.md), the same pipeline against services,
   actions, lifecycle nodes, and composed components.
 - [Design: Architecture](../design/architecture.md), how the analyzer and

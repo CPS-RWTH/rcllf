@@ -46,10 +46,15 @@ nav:
   - Getting Started:
     - Quickstart: getting-started/index.md
     - Your First LF Run: getting-started/first-lf-run.md
+    - How rcllf Works: getting-started/how-rcllf-works.md
+    - Installation and Platforms: getting-started/installation.md
     - arm64 and NVIDIA Jetson: getting-started/arm64-jetson.md
   - Guides:
-    - Porting Your ROS2 System: guides/porting-guide.md
-    - Bring Your Own ROS2 Code: guides/bring-your-own-code.md
+    - Bring Your Own ROS 2 Code: guides/bring-your-own-code.md
+    - Porting Your ROS 2 System: guides/porting-guide.md
+    - Configure Execution: guides/configure-execution.md
+    - Troubleshooting: reference/troubleshooting.md
+    - FAQ: guides/faq.md
   - Examples:
     - Overview: examples/index.md
     - timer_example: examples/timer-example.md
@@ -63,14 +68,22 @@ nav:
     - fusion_example: examples/fusion-example.md
     - brake_fusion: examples/brake-fusion.md
     - system_bringup: examples/system-bringup.md
+  - Concepts:
+    - Design Principles: design/design-principles.md
+    - Architecture: design/architecture.md
+    - Time and Coordination: design/time-and-coordination.md
+    - LF Code Generation: design/lf-generation.md
+    - Extraction: design/extraction.md
+    - Callback Groups: design/callback-groups.md
+    - Glossary: design/glossary.md
   - Features:
     - Overview: features/index.md
     - Support Matrix: features/support-matrix.md
     - Soundness Checker: features/soundness.md
     - Federation (Multi-Process): features/federation.md
-    - Execution Configuration: features/execution-config.md
     - Fast Mode: features/fast-mode.md
     - Missing Messages: features/missing-messages.md
+    - Publication Correspondence: features/correspondence.md
     - Plants: features/plants.md
     - message_filters Synchronizers: features/message-filters.md
     - BNA Synchronizer: features/bna-synchronizer.md
@@ -79,24 +92,21 @@ nav:
     - Tracing: features/tracing.md
   - Reference:
     - CLI Reference: reference/cli.md
-    - ros2_lf_binding API: reference/ros2-lf-binding.md
+    - execution.yaml Reference: features/execution-config.md
+    - Diagnostic Codes: reference/diagnostic-codes.md
+    - Environment Variables: reference/environment-variables.md
     - Data Model: reference/data-model.md
     - Resolved Configuration Model: reference/resolved-model.md
     - Semantic Trace Schema: reference/trace-schema.md
-    - Code Structure: reference/code-structure.md
     - Docker Reference: reference/docker.md
-    - Troubleshooting: reference/troubleshooting.md
-  - Design:
-    - Design Principles: design/design-principles.md
-    - Architecture: design/architecture.md
-    - Time & Coordination Model: design/time-and-coordination.md
-    - LF Code Generation: design/lf-generation.md
-    - Extraction: design/extraction.md
-    - Callback Groups: design/callback-groups.md
-    - Glossary: design/glossary.md
+  - Project:
+    - Binding Internals: reference/ros2-lf-binding.md
+    - Code Structure: reference/code-structure.md
     - Architecture Decision Records:
-      - ADR 0001 — LF Is the Sole Time Authority: design/adr/0001-lf-owns-time.md
-      - ADR 0002 — RID Assignment and Stability: design/adr/0002-rid-assignment.md
+      - ADR 0001, LF Is the Sole Time Authority: design/adr/0001-lf-owns-time.md
+      - ADR 0002, RID Assignment and Stability: design/adr/0002-rid-assignment.md
+    - Changelog: https://github.com/CPS-RWTH/rcllf/blob/main/CHANGELOG.md
+    - Contributing: https://github.com/CPS-RWTH/rcllf/blob/main/CONTRIBUTING.md
 
 markdown_extensions:
   - admonition

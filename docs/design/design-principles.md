@@ -12,14 +12,14 @@ per ready subscription) before taking a new snapshot. Which handles are ready
 at snapshot time depends on DDS delivery timing, OS scheduling, and timer
 phasing, so callback interleaving, and therefore the data each callback
 observes, varies run to run under identical inputs. See the
-[ROS 2 executor documentation](https://docs.ros.org/en/humble/Concepts/Intermediate/About-Executors.html)
+[ROS 2 executor documentation](https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Executors.html)
 for the primary-source description.
 
 Executor tuning (priorities, callback groups, chain-aware scheduling) bounds
 *when* callbacks run. It does not fix *what they observe and in what order*.
 There is still no cross-node logical clock, so two nodes' callbacks can
 interleave differently between runs even when each node's own dispatch order
-is bounded. rcllf replaces the executor with a Lingua Franca reactor
+is bounded. rcllf replaces the executor with a Lingua Franca (LF) reactor
 scheduler so that ordering is fixed by the program text: declaration order
 within a reactor, dependency order across reactors, never by thread
 scheduling or DDS arrival order. Reactors with no dependency between them
@@ -27,80 +27,77 @@ are not ordered against each other: their reactions may run in parallel. See
 [Three kinds of determinism](time-and-coordination.md#three-kinds-of-determinism)
 for exactly which properties that buys and which it does not.
 
-## The tradeoff: a declared latency contract
+## The tradeoff: a declared delay
 
-rcllf's generator emits every inter-node topic connection with an `after`
-delay. That delay is a declared logical-time contract in the
-[Logical Execution Time (LET)](time-and-coordination.md#what-let-is) sense. A
-value published at tag `T` becomes observable downstream at tag `T + delay`,
-regardless of how long the transport actually took. The full semantics,
-including what happens when the contract is not satisfiable, are on
+Every topic connection between two nodes has a declared logical delay d. The
+default is 0; you set it with `--after-delay` or in `execution.yaml`. A message
+published at [tag](glossary.md#tag) `T` reaches the subscriber's callback at
+tag `T + d`, no matter how long the transport actually took. This is a
+contract in the
+[Logical Execution Time (LET)](time-and-coordination.md#what-let-is) sense.
+For a topic, the subscriber applies the delay when it hands the message to the
+callback (see [Publication correspondence](../features/correspondence.md)).
+Services, actions and the remaining topic connections carry it as an LF
+`after` delay. The full semantics are on
 [Time & Coordination: the `after`-delay contract](time-and-coordination.md#why-after-delays-are-a-let-style-contract-not-a-latency-measurement).
 
-The price of that contract is added latency. Every connection waits out its
-declared delay even when the message arrives sooner. Practitioners are trading
-wall-clock responsiveness for a repeatable input→output mapping. This is not
-free, and it is not automatic. The declared delay must exceed the transport's
-worst case for the contract to hold in practice (see
-[Execution Configuration](../features/execution-config.md)). rcllf also does not address
-wall-clock schedulability. It does not bound *when* a reaction runs, only what
-it observes once it does. If you need response-time bounds, executor-level
-scheduling work remains the answer, applied to the reactor-c scheduler rather
-than to rclcpp's executor.
+The price of that contract is latency. A subscriber cannot run its callback
+for tag `T + d` before the message published at `T` has arrived, so a slow
+transport holds it back instead of changing what it sees. You trade
+wall-clock responsiveness for a repeatable input to output mapping. rcllf
+does not address wall-clock schedulability. It does not bound *when* a
+reaction runs, only what it observes once it does. If you need response-time
+bounds, executor-level scheduling work remains the answer, applied to the
+reactor-c scheduler rather than to rclcpp's executor.
 
 ## How it compares to real-time ROS 2 work
 
-There is a substantial body of work making ROS 2 execution more predictable.
-It solves a different problem than LF does, and the two are complementary.
+Real-time ROS 2 work such as response-time analysis of processing chains,
+PiCAS and TIDE makes dispatch *timing* predictable: it bounds latency and
+fixes the order within one executor. It does not order events *across*
+nodes, because there is no cross-node logical clock. rcllf does the
+opposite: it fixes order and observed data across nodes and leaves timing to
+the scheduler, so the two approaches complement each other.
 
-**What that work provides.** Casini et al. give the foundational response-time
-analysis of ROS 2 processing chains under the default executor plus
-reservation-based scheduling, the field's reference point for what is
-analytically bounded. [PiCAS](https://doi.org/10.1109/RTAS52030.2021.00028)
-replaces the default rclcpp executor with priority-driven, chain-aware
-scheduling that reorders callback dispatch by end-to-end chain priority to
-bound latency. [TIDE](https://doi.org/10.3390/electronics13091658) does the
-analogous thing for micro-ROS with two chain-aware priority queues and a
-priority-based communication daemon. The
+### Background
+
+The scheduling work has a long line. Casini et al. give the response-time
+analysis of ROS 2 processing chains under reservation-based scheduling.
+[PiCAS](https://doi.org/10.1109/RTAS52030.2021.00028) replaces the default
+rclcpp executor with priority-driven, chain-aware scheduling.
+[TIDE](https://doi.org/10.3390/electronics13091658) does the same for
+micro-ROS. The
 [LITES 2025 survey](https://drops.dagstuhl.de/entities/document/10.4230/LITES.11.1.1)
 covers the field as a whole.
 
-**What it does not provide.** These are *scheduling* results. They bound
-latency and make dispatch order within one executor predictable. None of them
-makes execution a deterministic function of the input timeline, and none of
-them orders events *across* nodes, since there is no cross-node logical clock to
-order them by. Their "determinism" is bounded, predictable latency, which is a
-different property from a repeatable input→output mapping.
-
-**The relationship, stated precisely.** Executor-level priority and
-chain-aware scheduling is orthogonal to LF's tag-ordered coordination. A
-system can want both, and neither substitutes for the other.
-
-**Closest prior art.** Menard et al.'s work on Adaptive AUTOSAR is the nearest
-precedent for what rcllf does. It shows an industrial middleware to be
-nondeterministic by default (thread-based components, undefined message
-processing order) and fixes it by implementing components as reactors with
-safe-to-process scheduling over a modified transport binding. The difference
-is scope. That work is AUTOSAR-specific and requires the application and
-transport to be built for it, while rcllf converts unmodified ROS 2
-applications automatically. For the risks that appear once a reactor program
-is distributed, Bateni et al. catalogue the nondeterminism hazards of
-distributed cyber-physical systems, relevant reading before relying on
+The nearest precedent for what rcllf does is Menard et al.'s work on Adaptive
+AUTOSAR. It implements AUTOSAR components as reactors to remove the
+middleware's nondeterministic message order. That work needs the application
+and transport to be built for it, while rcllf converts unmodified ROS 2 code.
+Bateni et al. catalogue the nondeterminism risks of distributed
+cyber-physical systems, which is useful reading before relying on
 [federated, centralized coordination](time-and-coordination.md#regime-2-federated-centralized).
 
-Full citations for all of the above are in
+Full citations are in
 [Time & Coordination: References](time-and-coordination.md#references).
 
-## Summary for both audiences
+## When rcllf fits
 
-- **Practitioner:** if your bug reports read "works on my machine" and trace
-  back to callback interleaving, LF removes that source of variation at the
-  cost of a latency contract you must size correctly. It does not make your
-  system faster.
-- **Researcher:** rcllf is not a scheduling contribution, and it does not
-  compete with PiCAS, TIDE, or reservation-based analysis. It is a
-  determinism contribution (firing-order and data determinism via LF's
-  tagged-event model) applied automatically to unmodified ROS 2
-  applications. See
-  [Three kinds of determinism](time-and-coordination.md#three-kinds-of-determinism)
-  for the precise claims and their scope.
+- Your bug reports read "works on my machine" and trace back to callback
+  interleaving. rcllf removes that source of variation.
+- You want two runs with the same inputs to give the same outputs, for
+  testing, replay or certification evidence.
+- Your nodes are written in C++ with rclcpp and set up their timers,
+  subscriptions and clients in the constructor or a lifecycle hook. The
+  [Support Matrix](../features/support-matrix.md) lists what converts.
+
+## When it does not fit
+
+- You need a faster system or hard response-time bounds. rcllf does not make
+  callbacks faster and adds no wall-clock guarantees.
+- Your inputs come from outside the system and their arrival time is the
+  signal. Such inputs keep their arrival-time behavior (see
+  [the determinism claim](time-and-coordination.md#the-determinism-claim)).
+- Your code uses a pattern the analyzer refuses, such as a blocking service
+  client ([RCLLF-H009](../reference/diagnostic-codes.md#rcllf-h009)). The
+  [Support Matrix](../features/support-matrix.md) lists each one.

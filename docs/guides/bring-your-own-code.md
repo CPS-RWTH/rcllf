@@ -25,7 +25,7 @@ live in a workspace of their own, go to
   does not resolve to its source.
 - **Callbacks written as the whole argument**: an inline lambda, or
   `std::bind(&Class::method, this)`. A timer or subscription callback first stored in
-  a local variable is refused with RCLLF-H007.
+  a local variable is refused with [RCLLF-H007](../reference/diagnostic-codes.md#rcllf-h007).
 - **A build with `compile_commands.json`**, so the analyzer can parse your sources with
   the same flags the compiler used (`-DCMAKE_EXPORT_COMPILE_COMMANDS=ON`).
 - **Node classes that take `rclcpp::NodeOptions`** in their constructor (with a default
@@ -540,8 +540,8 @@ so it never fires under rcllf.
 | Stage | Where |
 |---|---|
 | Analyze | The `Error:` or `Warning:` line names the node, package and executable. [Troubleshooting](../reference/troubleshooting.md#colcon-lf-analyze-fails-with-error-node-for-a-launched-node) explains each message. |
-| Configure, generate | Hazard diagnostics (`RCLLF-H...`) are printed and kept in `system.json` under `diagnostics`. The [Support Matrix](../features/support-matrix.md) lists them. |
-| Build | `log/latest_build/lf_generated_<package>_<stem>/stdout_stderr.log` in your workspace. |
+| Configure, generate | Hazard diagnostics (`RCLLF-H...`) are printed and kept in `system.json` under `diagnostics`. [Diagnostic Codes](../reference/diagnostic-codes.md) lists each code with its severity and what to do. |
+| Build | `log/latest_build/lf_generated_<package>_<system>/stdout_stderr.log` in your workspace, where `<system>` is the launch file's name without underscores, in lower case (`minimal_pubsub` gives `lf_generated_my_bringup_minimalpubsub`). The full rule is in the [CLI reference](../reference/cli.md). |
 | Run | The `Bound timer` and `Bound subscription` lines list every callback rcllf drives. A callback without such a line never fires. |
 
 ## The stages one by one
@@ -577,11 +577,12 @@ messages (`skip` or `block`) per node or per subscription.
 If the analysis found a QoS hazard (an unreliable input, a shallow queue, a topic name
 computed at run time, or a `message_filters` form other than the two-input ExactTime or
 ApproximateTime synchronizer), generation enforces it: warnings print and generation goes
-on. An error-level hazard (for example **RCLLF-H003**, **H007**, **H009** or **H011**)
-refuses generation. Some of them can be acknowledged by adding the code to
-`acknowledged_hazards` in `execution.yaml`. The
-[support matrix](../features/support-matrix.md) lists every hazard code with its level, and
-[Troubleshooting](../reference/troubleshooting.md) says what to do about each.
+on. An error-level hazard (for example [RCLLF-H003](../reference/diagnostic-codes.md#rcllf-h003) or
+[H007](../reference/diagnostic-codes.md#rcllf-h007)) refuses generation. Some of them can be
+acknowledged by adding the code to `acknowledged_hazards` in `execution.yaml`, which skips the
+check and leaves the problem in the program.
+[Diagnostic Codes](../reference/diagnostic-codes.md) lists every code with its severity, and
+[Troubleshooting](../reference/troubleshooting.md) says what to do about each message.
 
 Go deeper: [Execution Configuration](../features/execution-config.md) (the two-file
 model, precedence, `acknowledged_hazards`).
@@ -649,4 +650,5 @@ unknown). If your package hits a wall:
   components and launch files with a before and after, and the hazards each can trigger.
 - [Support Matrix](../features/support-matrix.md) lists what is supported, what warns
   and what is refused.
+- [Diagnostic Codes](../reference/diagnostic-codes.md) explains every `RCLLF-H` code.
 - [Troubleshooting](../reference/troubleshooting.md) covers common failures.

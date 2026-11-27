@@ -18,4 +18,4 @@ Layered so that everything above ``reader`` is testable without CTF binaries:
     ``lf-eval analyze | list-metrics | sample-cpu``.
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"

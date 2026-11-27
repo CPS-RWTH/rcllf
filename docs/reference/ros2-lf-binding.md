@@ -1,10 +1,12 @@
-# ros2_lf_binding: Internals
+# Binding Internals
 
 `ros2_lf_binding` is the shared library that bridges the lfc-compiled Lingua Franca
-scheduler and the running ROS 2 component nodes. This page documents the C API contract,
-the internal data structures, and the design decisions behind each module.
+scheduler and the running ROS 2 component nodes. It is a page for contributors and for
+readers who debug a run. It has two parts: the C API contract that generated code calls
+([Public C API](#public-c-api)), then the data structures and the design decisions behind
+each module ([Internal Data Structures](#internal-data-structures) onward).
 
-For a high-level overview of where it fits in the pipeline, see [lfc Path](../design/architecture.md).
+For a high-level overview of where it fits in the pipeline, see [Architecture](../design/architecture.md).
 For the time-authority design decision, see [ADR 0001](../design/adr/0001-lf-owns-time.md).
 
 ---
@@ -13,7 +15,8 @@ For the time-authority design decision, see [ADR 0001](../design/adr/0001-lf-own
 
 The entire public interface is declared in `include/ros2_lf_binding/ros2_lf_binding.h`.
 All functions have C linkage so they can be called from lfc-generated C++ without
-name-mangling issues.
+name-mangling issues. The sections below describe the lifecycle, startup and dispatch
+entry points in detail; [Other API groups](#other-api-groups) lists the rest in one line each.
 
 ### Lifecycle
 
@@ -28,7 +31,17 @@ Called from `ros2_lf_startup.cpp` **before** lfc's own `main()` via a
 3. Parses `SYSTEM_JSON` env-var (or `--system-json` argv argument) to locate `system.json`
 4. Creates `LFComponentManager` and a `SingleThreadedExecutor` (used only for node
    registration, since lfc owns scheduling)
-5. Loads all `(package, class_name)` pairs found in `system.json`
+
+`ros2_lf_runtime_init` does not load nodes. That is `ros2_lf_runtime_load_nodes()`,
+described next.
+
+#### `ros2_lf_runtime_load_nodes()`
+
+Called by the generated `ros2_lf_startup.cpp` constructor after `ros2_lf_runtime_init()`
+and after `node_factories.cpp` has registered the non-component nodes with
+`ros2_lf_register_node()`. It loads the component and non-component nodes found in the
+`system.json` that init parsed. `ros2_lf_runtime_wait_ready()` then waits for DDS
+discovery, before lfc sets the start time.
 
 **If `SYSTEM_JSON` is not set and `--system-json` is not provided, the process calls
 `rclcpp::shutdown()` and `std::exit(EXIT_FAILURE)`.** A misconfigured launch
@@ -58,7 +71,8 @@ the hook runs on an LF worker or in a user callback) or the wait times out, they
 in the hook with a warning, before `rcl_shutdown`. Callbacks of other nodes, of
 component nodes and on other contexts stay with their context.
 
-**Process end bound after a signal.** Once rclcpp has shut down on
+**Process end bound after a signal** (`runtime.cpp`: `arm_stop_timeout()`,
+`stop_timeout_ms_from_env()`). Once rclcpp has shut down on
 a signal, the binding gives the process `RCLLF_STOP_TIMEOUT_MS` (default 3000)
 to reach `ros2_lf_runtime_shutdown()`, and the same amount again for the
 teardown after it. The bound starts after the pre-shutdown hook above, so a
@@ -80,9 +94,11 @@ environment, for example `RCLLF_STOP_TIMEOUT_MS=10000`; `0` turns the bound
 off. `ros2 launch` still sends SIGTERM `sigterm_timeout` (default 5 s) after
 its SIGINT and SIGKILL 5 s later, so a bound above that also needs a larger
 `sigterm_timeout`. Processes that end normally (LF reaches its stop time) and
-get no signal are not bounded.
+get no signal are not bounded. The value is read once at init; an invalid
+value logs a warning and keeps the default.
 
-**Startup bound.** From before `rclcpp::init` until
+**Startup bound** (`runtime.cpp`: `arm_startup_bound()`,
+`startup_timeout_ms_from_env()`). From before `rclcpp::init` until
 `ros2_lf_runtime_wait_ready()` reaches its discovery wait, the binding gives the
 start `RCLLF_STARTUP_TIMEOUT_MS` (default 30000). The span covers `rclcpp::init`,
 every node construction, the component loading and the correspondence startup
@@ -100,7 +116,8 @@ bound and hands nothing over, so a stuck start still ends at the startup bound.
 The armed bound logs `rcllf: startup bounded to <ms> ms`. `0` turns it off; an invalid value
 logs a warning and keeps the default.
 
-**Controlled shutdown.** A signal makes rclcpp run the binding's
+**Controlled shutdown** (`runtime.cpp`: `stop_lf_before_context_shutdown()`,
+`stop_join_bound_ms()`, `stop_drain_bound_ms()`). A signal makes rclcpp run the binding's
 pre-shutdown hook before it invalidates the context. The hook requests the LF
 stop (the stop tag is the current tag plus one microstep, or the tag the RTI
 grants in a federation) and waits, bounded by `RCLLF_STOP_MAX_MS`, until the
@@ -120,7 +137,7 @@ writer still owes (an expectation that ended `NOT_READY` or pending whose
 sample has not been taken), so that sample is recorded late rather than never;
 `owed_at_close` in the reconcile line counts the writers still owing one when
 the table closed. Expectations at or after the stop tag are not dispatched and
-end `EPOCH_CLOSE` at the close, as before. A sample whose drain LF refuses to
+end `EPOCH_CLOSE` at the close. A sample whose drain LF refuses to
 queue because the drain's tag would lie after the stop tag (its release
 `t + d` is past the stop, or it needs the next microstep of the stop tag;
 `lf_schedule` returns 0 for such an event) ends `schedule_refused` instead:
@@ -135,16 +152,16 @@ still records them. The process end bound itself counts from the last progress
 `RCLLF_STOP_MAX_MS` (default four times the bound, 12 s) from the signal, so a
 run winding down a lagging tag under overload is not cut off with code 124
 while its dispatches still return, while a federate whose RTI is gone still
-ends at the cap.
+ends at the cap (`stop_progress()`, `rearm_stop_timeout()`, `stop_max_ms_from_env()`).
 
-`RCLLF_EXIT_WITH_PARENT=<pid>` makes the kernel send the process SIGTERM when
+`RCLLF_EXIT_WITH_PARENT=<pid>` (`runtime.cpp`: `exit_with_parent_if_requested()`) makes the kernel send the process SIGTERM when
 its parent dies (`PR_SET_PDEATHSIG`). The value is the pid of the launching
 process, taken there (`str(os.getpid())` in the launch file), not in the
 child: had the parent died before the child's init, the child's `getppid()`
 would already name init or a subreaper. At init the binding compares
 `getppid()` with that pid before and after the `prctl`; on a mismatch the
 launching process is gone, and the process logs a FATAL line and exits with
-code 1 before LF starts. A value that is not a pid, including the old `1`, is
+code 1 before LF starts. A value that is not a pid, including `1`, is
 refused the same way. The generated launch files set it for the
 single-process lfc node, for every federate and for the RTI guard
 (`rti_guard.py` applies the same check and then does not start the RTI),
@@ -200,14 +217,24 @@ Steps (implemented in `node_binding.cpp`):
 
 #### `ros2_lf_invoke_timer(self, reaction_id)`
 
-Called from every timer reaction body. Steps:
+Called from every timer reaction body. It returns quietly, without an error, on every
+guard below. Steps, from `reaction_dispatch.cpp`:
 
-1. `lf_time_advance_ros_clock()` pushes the current
-   [LF logical time](../design/time-and-coordination.md#logical-time-and-tags) into
-   the RCL time override so `Node::now()` returns logical time during the callback.
-2. Range-check `reaction_id` against `g_handle_table`.
-3. Assert `g_handle_table[reaction_id].kind == TIMER`.
-4. Call `entry.timer->execute_callback(call_info)`.
+1. `require_lf_worker` checks the call comes from an LF worker thread.
+2. Reset the per-reaction publication count, then `lf_time_advance_ros_clock()` pushes the
+   current [LF logical time](../design/time-and-coordination.md#logical-time-and-tags) into
+   the RCL time override so `Node::now()` returns logical time during the callback. The
+   periodic take-statistics log runs here too.
+3. Range-check `reaction_id` against `g_handle_table` (a warning, then return).
+4. `lifecycle_admit`: a lifecycle node that is not active at this tag runs no callback (traced).
+5. `bind_late_handle`: a lifecycle node's handle may appear on a later transition. An
+   `UNBOUND` entry marked late waits for it; any other `UNBOUND` entry is traced and skipped.
+6. A handle that is not a timer is skipped with a debug log.
+7. The weak timer pointer is locked. An expired entity (a lifecycle node dropped its
+   timer) is traced as expired and skipped.
+8. A timer the user cancelled (`is_canceled()`) is skipped until `reset()`; `reset()` does
+   not shift the LF tick grid.
+9. Trace the callback start, then call `timer->execute_callback(call_info)`.
 
 The `rcl_timer_call_info_t` passed to `execute_callback` has zero timestamps.
 rclcpp ignores these fields for user-defined timer callbacks.
@@ -217,8 +244,8 @@ rclcpp ignores these fields for user-defined timer callbacks.
 Called from every subscription reaction body. Steps:
 
 1. `lf_time_advance_ros_clock()`
-2. Range-check `reaction_id`.
-3. Assert `g_handle_table[reaction_id].kind == SUBSCRIPTION`.
+2. Range-check `reaction_id`; the lifecycle and late-bind guards of the timer path apply too.
+3. Skip with a debug log when `g_handle_table[reaction_id].kind` is not `SUBSCRIPTION`.
 4. `sub->take_type_erased(message, message_info)` polls the DDS/rmw queue.
 5. If a message is available: `sub->handle_message(message, message_info)`.
 6. If no message is available: `RCLCPP_DEBUG` log (not an error, since the lfc
@@ -287,6 +314,34 @@ call is not forwarded.
 
 ---
 
+### Other API groups
+
+The header declares more entry points than the sections above describe. Generated code
+calls them; user code never does. The header comments are the authority for each signature.
+
+| Group | Purpose |
+|---|---|
+| `ros2_lf_runtime_wait_ready`, `_defer_peer_check`, `_peer_check` | Wait for DDS discovery; a federate defers the cross-federate peer check until the RTI start time is known, then runs it or exits 3 |
+| `ros2_lf_runtime_declare_external_topic`, `_declare_external_stamp_anchor` | Declare a topic published from outside the system, and its stamp anchor |
+| `ros2_lf_runtime_shutdown_before_resign`, `_test_resign_delay` | Controlled shutdown before a federate resigns from the RTI; a test hook that delays the resign |
+| `ros2_lf_logical_time_ns` | Current logical time in nanoseconds |
+| `ros2_lf_invoke_sub_n` | Subscription dispatch for a trigger that owes several samples (`remaining`); returns the count dispatched |
+| `ros2_lf_topic_sent`, `_service_sent`, `_action_sent` | Count the publishes, requests or action sends a reaction made, so its output port is raised by that count |
+| `ros2_lf_output_deadline_arm` | Arm an output deadline for a topic's next publishes |
+| `ros2_lf_claim_publish` | Count a publish deferred to another thread for the running reaction (fault injection only) |
+| `ros2_lf_external_register`, `_invoke_external_sub` | Register and dispatch a subscription fed from outside the system |
+| `ros2_lf_invoke_srv_send`, `_srv_server`, `_srv_client_cb` | Service dispatch (see [Service dispatch](#service-dispatch)) |
+| `ros2_lf_invoke_action_*`, `ros2_lf_action_*` | Action dispatch, including `_cancel_server`, `_result_server`, external registration and the pre-shutdown call |
+| `ros2_lf_ingress_*` | The bounded ingress queue of a node: capacity, register, move, drain, close |
+| `ros2_lf_corr_*` | Publication correspondence: emit, arrive, drain and flush records of an admitted edge, local and remote |
+| `ros2_lf_xtag_*`, `ros2_lf_xfed_legacy_sent` | Cross-federate tag transport for legacy edges |
+| `ros2_lf_message_lost_context` | Inside a deadline or message-lost callback, what the callback was raised for |
+
+Return values: `ros2_lf_invoke_sub` returns `int` (1 if the callback ran, 0 otherwise, so the
+reaction counts a write on its stub outputs only for a callback that ran).
+`ros2_lf_invoke_timer` returns `void`. The action `invoke_*` functions take a `count` of
+samples, each with a bounded wait, and trace LOST for one that does not arrive.
+
 ## Internal Data Structures
 
 ### RID table (`rid_table.cpp`, `rid_table_api.h`)
@@ -328,16 +383,22 @@ enum class HandleKind {
 
 struct HandleEntry {
     HandleKind                            kind = HandleKind::UNBOUND;
-    rclcpp::TimerBase::SharedPtr          timer;
-    rclcpp::SubscriptionBase::SharedPtr   subscription;
-    rclcpp::ServiceBase::SharedPtr        service_server;
-    rclcpp::ClientBase::SharedPtr         service_client;
-    rclcpp::Waitable::SharedPtr           action_waitable;
-    size_t                                action_entity_id = 0;  // 0=GoalClient, 1=ResultClient, 3=FeedbackSubscription
+    rclcpp::TimerBase::WeakPtr            timer;           // entities are held weakly
+    rclcpp::SubscriptionBase::WeakPtr     subscription;
+    rclcpp::ServiceBase::WeakPtr          service_server;
+    rclcpp::ClientBase::WeakPtr           service_client;
+    rclcpp::Waitable::WeakPtr             action_waitable;
+    size_t                                action_entity_id = 0;  // 0=GoalClient, 1=ResultClient, 2=CancelClient, 3=FeedbackSubscription
     std::string                           topic;
+    std::string                           resolved_topic;
     std::string                           node_class;
     std::string                           callback_name;
-    std::optional<rmw_request_id_t>       pending_request_id;
+    TakeMode                              take_mode = TakeMode::Skip;
+    int64_t                               take_timeout_ms = 100;
+    bool                                  late = false;       // lifecycle node: handle may appear later
+    bool                                  lifecycle = false;  // dispatch asks the lifecycle gate first
+    uint64_t                              gate_epoch = 0;
+    int64_t                               generation = -1;
 };
 
 extern std::vector<HandleEntry> g_handle_table;
@@ -345,10 +406,13 @@ extern std::vector<HandleEntry> g_handle_table;
 
 `g_handle_table` is a global vector indexed by RID. It is:
 
-- **Written** only during startup reactions (single-threaded lfc init).
-- **Read** during reaction dispatch (also single-threaded with `LF_SINGLE_THREADED=1`).
-- **Thread safety:** no locking needed under the current single-threaded reactor-c
-  configuration. Revisit when moving to the multi-threaded runtime.
+- **Written** only during startup reactions.
+- **Read** during reaction dispatch, only after all startup reactions have completed.
+- **Thread safety:** the table is read-only after startup (entries are never written at
+  run time), so reads need no lock. An entity's liveness lives in its `weak_ptr`
+  referent, checked with `lock()` at each dispatch. (`CMakeLists.txt` builds the vendored
+  reactor-c static library with `LF_SINGLE_THREADED 1`; the read-only rule, not that
+  flag, is what the dispatch path relies on.)
 
 ### Component manager (`component_manager.hpp`)
 
@@ -451,7 +515,7 @@ every case.
 
 ## Unit Tests
 
-The gtest suites in `packages/lf-frame/ros2_lf_binding/test/` include these:
+The gtest suites live in [`packages/lf-frame/ros2_lf_binding/test/`](https://github.com/CPS-RWTH/rcllf/tree/main/packages/lf-frame/ros2_lf_binding/test) (more than fifty files; read the directory for the full list). These suites are the ones this page refers to:
 
 | Suite | What it tests |
 |-------|---------------|
@@ -485,10 +549,16 @@ ros2_lf_reaction_ids_init()         ← generated by lf_generator.py
     register_rid_entry(...)          ← populates g_rid_entries
     resize_handle_table(RID_COUNT)   ← allocates g_handle_table
 
-ros2_lf_runtime_init(argc, argv)    ← generated by lf_generator.py
+ros2_lf_runtime_init(argc, argv)    ← called by the generated ros2_lf_startup.cpp
     rclcpp::init()
     lf_clock_init()
+    parse SYSTEM_JSON, create LFComponentManager
+
+ros2_lf_runtime_load_nodes()        ← after node_factories.cpp registered the nodes
     LFComponentManager::load_component(pkg, class) × N
+    non-component nodes built from their registered factories
+
+ros2_lf_runtime_wait_ready()        ← DDS discovery, before lfc sets the start time
 
 lfc's main()
     │

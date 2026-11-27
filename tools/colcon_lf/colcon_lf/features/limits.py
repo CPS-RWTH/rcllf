@@ -20,8 +20,7 @@ LIMIT_ROWS: tuple[tuple[str, str], ...] = (
     (
         'cross-federate-loss-detection',
         'Detected loss holds within one process. An admitted cross-federate edge between two '
-        'federates on one host detects loss too (evaluation row `loss/rcllf-fed` of the paper that '
-        '`CITATION.cff` cites). '
+        'federates on one host detects loss too (shown in the evaluation of the rcllf paper). '
         'A relay publisher is admitted too. Federates on two hosts are '
         'admitted when the deployment declares a bound on the offset of the two clocks below the '
         'edge timeout. Cross-federate edges that are not admitted stay '
@@ -118,8 +117,8 @@ LIMIT_ROWS: tuple[tuple[str, str], ...] = (
     ),
     (
         'rq4-failed-refsys-runs',
-        'The reference-system evaluation of the paper that `CITATION.cff` cites (its data does not '
-        'ship in this repository) reports 5 of 160 runs as failed, all '
+        'The reference-system evaluation of the rcllf paper (its data is not part of this '
+        'repository) reports 5 of 160 runs as failed, all '
         '`stock-launch-per-node-depth8` (3 idle, 2 under `cpu-mem`), carrying 6 counted losses '
         '(an earlier evaluation: 12 runs, 15 losses, same class). The per-reader accounting puts each '
         'counted loss inside the match-resolution window, a gap between match-probe polls. '

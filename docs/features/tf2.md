@@ -7,6 +7,33 @@ rcllf never computes a transform. It decides **when** the Buffer is fed and **wh
 lookup is evaluated, and both happen at logical tags, so a converted run gives the same
 outcomes every time.
 
+## Try it
+
+`tf2_acq_example` is a showcase with seven lookups (cases T1 to T7). It is not in the
+first-start build, so name it in `ENTRYPOINT_PACKAGES` (see the
+[Docker reference](../reference/docker.md)):
+
+```bash
+docker compose run --rm -e ENTRYPOINT_PACKAGES=tf2_acq_example dev bash -c \
+  'colcon lf --package tf2_acq_example && ros2 launch lf_generated_tf2_acq_example_bringup lf_bringup.launch.py'
+```
+
+Without the selection, `colcon lf` stops with `'rcllf_tf2/acquisition_lookup.hpp' file
+not found` and `Analysis failed`. The line below it that suggests an `apt-get install`
+does not help here: the header comes from the `rcllf_tf2` package of this workspace,
+which the selection builds. The program runs until you press Ctrl-C. These lines
+appear (one request every 30 ms, the first after the start line):
+
+```text
+[INFO] [1795774772.019844437] [acq_sampler]: ACQ_START t0=1795774772018377687
+[INFO] [1795774772.078989849] [acq_sampler]: ACQ_REQ case=T1 id=1
+[INFO] [1795774772.108794929] [acq_sampler]: ACQ_REQ case=T2 id=2
+[INFO] [1795774772.108966049] [acq_sampler]: ACQ_REQ case=T5 id=3
+...
+```
+
+The package README derives the expected outcome of every case by hand.
+
 ## The supported form
 
 ```cpp
@@ -78,17 +105,6 @@ with no `request` call the scan sees, is `tf2_stamp_unknown`. The analyzer does 
 check how the producer of a message stamps it: an in-system publisher's `header.stamp`
 is whatever that node writes.
 
-What the stamp scan proves, and what it assumes: it admits only stamp forms it proves
-from the clang AST of the node's own translation unit and refuses everything else.
-Every name is the declaration the compiler resolved, never its spelling (a local
-constant named `RCL_ROS_TIME` is not rcl's clock enumerator). A message parameter keeps
-its subscription's provenance only when the callback reads it and never writes it,
-the message it points to included. A callback method counts only when the node passes it to
-`create_subscription` as `std::bind(&Node::method, this, _1)` and never calls it itself. The scan assumes that no `const_cast` removes const
-to write a stamp, and it does not look inside called functions: a write in a callee the
-node's translation unit does not show is out of scope, like a listener hidden inside an
-opaque library.
-
 `execution.yaml` can set both per node, and then the yaml wins over the literals:
 
 ```yaml
@@ -126,24 +142,29 @@ determinism claim.
 | `tf2_stamp_unknown` | a request stamp whose source the scan cannot follow, or an adapter with no `request` call in the node's files | pass `now()`, `msg->header.stamp` in the subscription callback, or a variable set from one of them |
 | `tf2_clock_mismatch` | a Buffer that is not made with the node's own `get_clock()`, or a listener whose `/tf` or `/tf_static` no node of the system publishes and `execution.yaml` does not declare with `anchor: stamp` | a node-clock Buffer; broadcast the transforms from a node of the system, or declare the topic as a stamp-anchored external input (below) |
 
-For example, `colcon lf-generate --package tf_listener_example` refuses `tf_listener`
-with `tf2_direct_lookup`. A node that only broadcasts (`TransformBroadcaster`,
+For example, `tf_listener_example` (in `packages/src/fixtures`, so name it in
+`ENTRYPOINT_PACKAGES`) looks a transform up directly. After `colcon lf-analyze
+--package tf_listener_example`, the command `colcon lf-generate --package
+tf_listener_example` exits 1 with:
+
+```text
+Error: generation refused, RCLLF-R002 tf2_direct_lookup: tf_listener tf_buffer_->lookupTransform at tf_listener_node.cpp:44 answers with what the Buffer holds at that instant (the latest transform for TimePointZero) and bypasses the bounded acquisition-time request; request the transform through rcllf_tf2::AcquisitionLookup, which answers for the stamp with a bounded wait (or list RCLLF-R002 in acknowledged_hazar...
+```
+
+The message is cut here, and ends with the `acknowledged_hazards` option named
+above. See [RCLLF-R002](../reference/diagnostic-codes.md#rcllf-r002). A node that only broadcasts (`TransformBroadcaster`,
 `StaticTransformBroadcaster`) converts without a record of its own: its `/tf` is an
 ordinary publisher.
 
-## Showcase and checks
+## The showcase
 
 `packages/src/tf2_acq_example` runs cases T1 to T7: interpolation, a stamp equal to a
 sample, a wait of one `/tf` period, a timeout, a static frame, an unknown frame and a
 stamp past the last sample. Its README derives each outcome by hand.
 
-- **Oracle O1** (`test/test_o1_oracle.cpp`): a plain `tf2::BufferCore` replay of the
-  same schedule, without the adapter, yields the hand table.
-- **Converted run** (`tools/colcon_lf/tests/runtime/test_runtime_tf2_acq.py`): 20 runs
-  match the hand table and give byte-identical outcome streams. A mutant that answers
-  the latest transform on a timeout (`RCLLF_TF2_TEST_MUTANT=latest_on_timeout`) is named
-  at T5. The run's `tf2_ros` must be the pinned 0.36.23, otherwise the check reports
-  `version_unpinned:tf2_ros <found>`.
+- **Check.** A plain `tf2::BufferCore` replay of the same schedule, without the
+  adapter, yields the hand table. The converted run is checked against it, run after
+  run, and the outcome streams are identical.
 - **Trace.** The adapter writes one `RCLLF_TF2 {json}` line per request (`tf_request`)
   and outcome (`tf_outcome`), and `tf_open_at_shutdown` for a request still open at
   the end. Each line names the node, the adapter (its construction ordinal on the
@@ -154,7 +175,7 @@ stamp past the last sample. Its README derives each outcome by hand.
   frames, `"unavailable"` when the path holds no single exact range: a reparented
   child frame, or a dynamic link stamped only at 0). `lf_eval.tf2_acq` reads them and compares them with a hand table. Under
   rcllf each line is also an LTTng event of the `rcllf` provider, `tf2_request` and
-  `tf2_outcome` (trace schema 1.8, see the
+  `tf2_outcome` (trace schema 1.7, extended in 1.8, see the
   [trace schema](../reference/trace-schema.md)), which `lf_eval.semantic.read_ctf`
   reads.
 
@@ -194,12 +215,10 @@ Buffer. Broadcast static frames from a node of the system where that matters.
   (`tf2_clock_mismatch`).
 - `/tf` follows the closed-world rule every rcllf topic follows. Once a node of the
   system publishes `/tf`, the topic is internal: the external-topic gate
-  only looks at topics with no in-system publisher
-  (`tools/colcon_lf/colcon_lf/verb/generate.py:1368`), so the listener is admitted.
+  only looks at topics with no in-system publisher, so the listener is admitted.
   A process outside the system that broadcasts on the same `/tf` is not ingested: the
   correspondence layer delivers only samples of writers the system's own records name
-  and counts any other sample as `UNRESOLVED`
-  (`packages/lf-frame/ros2_lf_binding/src/correspondence.cpp:1884`). Its transforms
+  and counts any other sample as `UNRESOLVED`. Its transforms
   never reach the Buffer, at arrival time or otherwise; move that broadcaster into the
   system.
 - `execution.yaml` `nodes.<node>.tf2` applies to all adapters of a node; there is no
@@ -211,10 +230,29 @@ Buffer. Broadcast static frames from a node of the system where that matters.
 - Detaching waits for a `/tf` callback that tf2's own executor is running. The binding
   starts the LF tags only after both listener subscriptions have left that executor's
   wait set and the group has stayed non-runnable, and refuses to start if that takes
-  more than 1 s (`packages/lf-frame/ros2_lf_binding/src/tf2_ingress.cpp`). It also
+  more than 1 s. It also
   refuses to start if tf2's executor does not hold both subscriptions before the
   detach, which the detach's wait-set probe relies on. A transform
   tf2 took before the detach finished, during node construction, has already reached
   the Buffer outside LF. Once the detach returns, tf2 takes nothing. If the group ever
   becomes runnable again, the binding logs a `tf_ingress_reattached` record, which
   fails the showcase check.
+
+## Resolved model and trace reference
+
+The analyzer records its decisions in the resolved model under `node:<fqn>#tf2.lookup.<member>`
+(wait bound and `on_timeout`), `node:<fqn>#tf2.sample_stamp.<member>` (the stamp
+source) and `topic:/tf#provenance`. At run time each lookup is also an LTTng event of
+the `rcllf` provider, `tf2_request` and `tf2_outcome` (schema 1.7, extended in 1.8).
+The [trace schema](../reference/trace-schema.md) lists their fields.
+
+What the stamp scan proves, and what it assumes: it admits only stamp forms it proves
+from the clang AST of the node's own translation unit and refuses everything else.
+Every name is the declaration the compiler resolved, never its spelling (a local
+constant named `RCL_ROS_TIME` is not rcl's clock enumerator). A message parameter keeps
+its subscription's provenance only when the callback reads it and never writes it,
+the message it points to included. A callback method counts only when the node passes it to
+`create_subscription` as `std::bind(&Node::method, this, _1)` and never calls it itself. The scan assumes that no `const_cast` removes const
+to write a stamp, and it does not look inside called functions: a write in a callee the
+node's translation unit does not show is out of scope, like a listener hidden inside an
+opaque library.

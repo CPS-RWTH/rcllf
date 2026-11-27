@@ -7,22 +7,18 @@ its limits.
 
 ## What it does
 
-- A **recording path** (`docker/trace.sh` + LTTng) that captures every `ros2:*`
-  tracepoint across every container in a run, with zero manual instrumentation.
-- An **analysis path** (`tools/lf_eval`, the `lf-eval` CLI) that turns raw CTF trace
-  data into typed events, per-callback timelines, causal chains derived from
-  `system.json`, and the registered metrics, with plots, in a single invocation.
-
-The same flow works for any package,
-so reproducing a result (or comparing `lfc` against stock ROS 2 executors) is a
-one-command operation instead of a bespoke analysis script per experiment.
+- A **recording path** (`docker/trace.sh` and LTTng) that captures the `ros2:*`
+  tracepoints of every container in a run, and the `rcllf:*` events a generated LF
+  program emits, with no manual instrumentation.
+- An **analysis path** (the `lf-eval` command, from `tools/lf_eval`) that reads the
+  recorded trace, builds typed events and causal chains from `system.json`, computes
+  the registered metrics and draws plots in one call.
 
 ## Recording a trace
 
-Tracing runs as its own Docker Compose service, `tracer`, which every other service
-can be traced alongside because all core services share the host PID and IPC
-namespaces (`pid: host`, `ipc: host` in `docker-compose.yml`), so one `lttng-sessiond`
-sees every container's processes.
+Tracing runs as its own Docker Compose service, `tracer`. All core services share the
+host PID and IPC namespaces (`pid: host`, `ipc: host` in `docker-compose.yml`), so one
+LTTng session daemon sees every container.
 
 ```bash
 # Terminal 1: start the shared LTTng session
@@ -35,51 +31,65 @@ docker compose run --rm dev ros2 launch pubsub_example bringup.launch.py
 docker compose stop tracer
 ```
 
+The tracer log ends with `Trace saved to output/experiments/trace_<YYYYMMDD_HHMMSS>`.
+Note that name, because nothing else points to the newest run.
+
+To trace the generated LF program and not the stock nodes, build and launch it in
+terminal 2 instead:
+
+```bash
+docker compose run --rm dev bash -c \
+  'colcon lf --package pubsub_example && ros2 lf launch pubsub_example bringup'
+```
+
+A stock launch records the `ros2:*` events only. The generated program records the
+`rcllf:*` events as well. A trace taken by a plain `docker run` needs `--shm-size 1g`
+or `--ipc host`, or no `rcllf` events are recorded.
+
 
 Under the hood, `docker/trace.sh`:
 
-1. Creates an LTTng session (`lttng create ros2_trace --output=...`).
-2. Enables every ROS 2 userspace tracepoint: `lttng enable-event -u 'ros2:*'`.
-3. Starts the session and blocks until it receives `SIGTERM`/`SIGINT`.
-4. On shutdown, stops and destroys the session, flushing CTF trace data to disk and
-   `chmod`-ing it world-readable.
+1. Creates an LTTng session (named by `LTTNG_SESSION_NAME`, default `ros2_trace`) with
+   the output directory `trace_<timestamp>/ust`.
+2. Creates two channels, `rcllf` and `ros2`, each with the contexts `vpid`, `vtid` and
+   `procname`, and enables `rcllf:*` and `ros2:*` on them.
+3. Starts the session and blocks until it receives `SIGTERM` or `SIGINT`.
+4. On shutdown, stops and destroys the session, which flushes the trace to disk, and
+   makes it world-readable.
 
-### Where runs land
+The providers `rcllf_stop` and `rcllf_dds` exist in the binding, but `trace.sh` does
+not enable them.
 
-Each run gets a timestamped directory under `output/experiments/`
-(`$EXPERIMENT_TRACE_DIR`, defaulting to `trace_<YYYYMMDD_HHMMSS>`). Real runs used for
-evaluation are typically renamed to `<timestamp>_<mode>_<label>_run<n>`, e.g.
-`20260424_002456_stock_pubsub_run3`):
+### Where the trace lands
 
+Each run gets a directory under `output/experiments/` (`$EXPERIMENT_TRACE_DIR`,
+default `trace_<YYYYMMDD_HHMMSS>`). It holds the trace and nothing else:
+
+```text
+output/experiments/trace_<YYYYMMDD_HHMMSS>/
+└── ust/              # LTTng CTF trace files (what lf-eval reads)
 ```
-output/experiments/<run-dir>/
-├── metadata.yaml     # experiment parameters — mode, duration, system, label, hostname
-├── tracing/          # LTTng CTF trace files (what lf-eval reads)
-├── bags/             # ros2 bag recording (mcap format), if one was taken
-└── logs/             # captured stdout/stderr, if any
-```
 
-`metadata.yaml` is plain key/value YAML, e.g.:
+`lf-eval analyze output/experiments/trace_<timestamp>` reads this directory as it is.
+It then reports `mode=unknown`. To label the run, add a `metadata.yaml` yourself. It
+is plain key/value YAML:
 
 ```yaml
-timestamp: "20260424_001126"
-mode: "stock"
-duration: 60
+mode: "lfc"        # or "stock"
 system: "pubsub_example"
-label: "pubsub_run3"
-hostname: "host01"
+label: "pubsub_run1"
 ```
 
-`lf-eval` doesn't require `metadata.yaml` to run, but the `mode` field is what lets
-the `determinism` metric group runs into `lfc` vs `stock` cohorts for cross-run
-comparison. See [Extending](#extending-adding-a-metric-via-the-registry) if you want to key off other
-fields.
-
+The `mode` field is what lets the `determinism` metric group runs into `lfc` and
+`stock` cohorts for cross-run comparison. Runs of the benchmark harness add more
+files next to the trace (a manifest and the launch log). The harness is not part of
+this release.
 
 ## Installing `lf-eval`
 
-`lf-eval` lives at `tools/lf_eval` and is not part of the ROS 2 colcon workspace. It's
-a plain Python package, installable with pip:
+In the dev container `lf-eval` is already on the `PATH`. Outside it, `lf-eval` is the
+plain Python package at `tools/lf_eval`, which is not part of the ROS 2 colcon
+workspace. Install it with pip:
 
 ```bash
 pip install -e "tools/lf_eval[test]"
@@ -120,7 +130,7 @@ available.
 ### Single run
 
 ```bash
-lf-eval analyze output/experiments/latest \
+lf-eval analyze output/experiments/trace_<timestamp> \
   --system packages/lf-analysis/pubsub_example/bringup/system.json
 ```
 
@@ -140,8 +150,8 @@ lf-eval analyze output/experiments/2026*_lfc_*_run{1,2} \
 
 For a full multi-variant sweep (stock single/multi/events-threaded vs. `lfc`, across
 repeatable scenarios, with a rendered report) rather than hand-picking run directories,
-the project uses a benchmark harness that is not part of this release; it drives
-this exact `analyze`/`report` path underneath.
+use a benchmark harness. It is not part of this release; it calls the same
+`analyze` and `report` code.
 
 ### Listing available metrics
 
@@ -173,7 +183,7 @@ time, not CPU time, so `lf-eval` supports an independent `/proc`-based measureme
 ```bash
 # In a third terminal, alongside `docker compose up tracer` and the workload:
 lf-eval sample-cpu --patterns pubsub_publisher,pubsub_subscriber \
-  --out output/experiments/latest/cpu_proc.json \
+  --out output/experiments/trace_<timestamp>/cpu_proc.json \
   --warmup 5 --window 30
 ```
 
@@ -399,9 +409,9 @@ exact sample. The analyzer walks a chain by these keys and never compares
 timestamps to decide which events belong together. The schema is in the
 [semantic trace schema reference](../reference/trace-schema.md).
 
-**Recording.** A benchmark run (the harness is not part of this release) records `rcllf:*` and `ros2:*` on two channels,
+**Recording.** A traced run records `rcllf:*` and `ros2:*` on two channels,
 `rcllf` and `ros2`, both with the `vpid`, `vtid` and `procname` contexts, and
-writes a run manifest `trace_manifest.json` next to `tracing/`. The manifest
+a benchmark-harness run also writes a run manifest `trace_manifest.json` next to the trace. The manifest
 holds the enabled events with their filters, the discard count per channel
 (`unknown` when lttng printed no counter), the host's boot id, the measured
 clock sync at run start and end (chrony, PTP or timesyncd, else `unavailable`),

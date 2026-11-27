@@ -15,18 +15,18 @@ hashing, `resolve.py` for the builder, `__main__.py` for the standalone CLI).
 {
   "schema": "rcllf.resolved_model",
   "schema_version": 1,
-  "system": {"name": "sentry_pipeline", "system_json_schema_version": 3},
+  "system": {"name": "bringup", "system_json_schema_version": 3},
   "claim_status": "supported",
   "records": [
     {
-      "contract_id": "timer:/imu_node/timer_callback#period",
+      "contract_id": "timer:publisher_node/timer_callback#period",
       "property": "period",
-      "subject": {"kind": "timer", "node": "/imu_node", "callback": "timer_callback"},
-      "value": 5.0,
+      "subject": {"kind": "timer", "node": "publisher_node", "callback": "timer_callback"},
+      "value": 500.0,
       "unit": "ms",
       "domain": "(0,inf)",
-      "provenance": "explicitly_configured",
-      "evidence": "execution.yaml:nodes./imu_node.timers.timer_callback.period",
+      "provenance": "extracted",
+      "evidence": "literal period_ms in system.json",
       "compatibility_mode": "preserved"
     }
   ],
@@ -37,14 +37,32 @@ hashing, `resolve.py` for the builder, `__main__.py` for the standalone CLI).
     "direct_field_mutation": "not_detectable"
   },
   "model_hash": "sha256:...",
-  "inputs": [{"role": "system_json", "path": "src/pkg/...", "sha256": "..."}]
+  "inputs": [{"role": "system_json", "path": "lf-analysis/pubsub_example/bringup/system.json", "sha256": "..."}]
 }
 ```
+
+The example is a record of `pubsub_example/bringup`, as `colcon lf-generate` writes it.
 
 `records` is sorted by `contract_id` (`<kind>:<subject path>#<property>`, stable
 across configurations). `inputs` and `model_hash` sit outside the hash itself, so a
 comment-only edit to an input file, or a path/timestamp change, never moves it.
 Only a value, a provenance change, or an `acknowledged_hazards` change does.
+
+## Records
+
+A record's `contract_id` is `<kind>:<subject>#<property>`. These are the records
+`pubsub_example/bringup` gets, which cover the kinds you meet in a plain system:
+
+| Record | Value | Source |
+|---|---|---|
+| `node:<node>#fqn` | the node's fully qualified name | `extracted` from the launch file |
+| `node:<node>#reaction_order` | `subscriptions_first` or `timers_first` | policy key, `registry-default:reaction_order` unless set |
+| `timer:<node>/<callback>#period`, `#offset` | milliseconds | the analysis, or `execution.yaml` |
+| `pub:<node>/<topic>#topic`, `#qos_depth`, `#qos_reliability` | resolved topic name and QoS the analysis read | `extracted` |
+| `sub:<node>/<topic>#topic`, `#qos_depth`, `#qos_reliability` | the same for subscriptions | `extracted` |
+| `sub:<node>/<topic>#take_mode`, `#take_timeout_ms` | `skip` or `block`, and the wait bound in milliseconds | policy keys, `explicitly_configured` |
+| `link:<src>-><dst>/<topic>#after_delay` | nanoseconds | `lf-generate` default, `--after-delay` or `execution.yaml` |
+| `node:<fqn>#mechanism.take`, `#mechanism.tf2`, `#tf2.*`, `topic:/tf#provenance` | mechanisms the gate checks | see below |
 
 ## Provenance
 
@@ -59,7 +77,9 @@ An exec-config subscription policy row (`sub:<fqn>/<topic>#<policy key>`) is alw
 `explicitly_configured`, even when the value is a bare registry default. The evidence
 string tells the two apart: `registry-default:<key>` vs. `execution.yaml:<scope>`.
 
-## The fail-closed gate (RCLLF-R001 / R002 / R003)
+## The fail-closed gate
+
+The gate raises [RCLLF-R001, RCLLF-R002 and RCLLF-R003](diagnostic-codes.md#rcllf-r001).
 
 Generation reads `resolved_model.json`'s records, not the persisted `system.json`
 diagnostics, because a value can become resolved *after* analysis (an
@@ -79,8 +99,8 @@ diagnostics, because a value can become resolved *after* analysis (an
   `tf2_clock_mismatch` (a Buffer on the node clock, `/tf` from a node of the system),
   `tf2_stamp_mismatch` and `tf2_stamp_unknown` (a request stamp on the node clock: `now()`
   or the `header.stamp` of an in-system or stamp-anchored input).
-  `take()` stays unsupported. `message_filters` stays on the existing `RCLLF-H003`
-  hazard gate.
+  `take()` stays unsupported. `message_filters` stays on the hazard gate of
+  [RCLLF-H003](diagnostic-codes.md#rcllf-h003).
 - **RCLLF-R003** (`check` subcommand and the run gate): refuses when `resolved_model.json`
   is missing or an `inputs[*].sha256` no longer matches the file on disk.
 
@@ -150,6 +170,4 @@ standing for `--ros-args --params-file` appended at run time) and `--exec-config
   `tf_listener` with `tf2_direct_lookup`, since it calls `lookupTransform` on the Buffer.
 - Acknowledging RCLLF-R002 lets generation go on without making tf2 deterministic: the
   refused lookup answers with whatever the Buffer holds when the reaction runs.
-  `message_filters` is detected and gated separately (H003).
-- Federated generation does not yet thread the timer-period override into each
-  federate's generated code (single-process generation does).
+  `message_filters` is detected and gated separately ([RCLLF-H003](diagnostic-codes.md#rcllf-h003)).

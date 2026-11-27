@@ -7,6 +7,34 @@ decision and every sample outcome is traced, so a run can be checked against an
 independent oracle. BNA is an rcllf refinement. It is not `ApproximateTime` and does
 not try to reproduce what `ApproximateTime` would pick.
 
+!!! note "Status: experimental"
+    BNA is generated and smoke-tested but has no evaluation behind it (see the
+    [Support Matrix](support-matrix.md)). It is an rcllf policy, so a node that uses
+    it does not build against stock ROS without the `rcllf_message_filters` package.
+
+## Try it
+
+`bna_example` has an anchor sensor, a candidate sensor and a BNA fusion node. It is not
+in the first-start build, so name it in `ENTRYPOINT_PACKAGES` (see the
+[Docker reference](../reference/docker.md)). The program runs until you stop it:
+
+```bash
+docker compose run --rm -e ENTRYPOINT_PACKAGES=bna_example dev bash -c \
+  'colcon lf --package bna_example && ros2 lf launch bna_example bringup'
+```
+
+Without the selection, `colcon lf` stops with `'rcllf_message_filters/bna_policy.hpp'
+file not found` and `Analysis failed`. The `apt-get install` hint printed below that
+does not help: the header is part of this workspace and the selection builds it.
+
+The `RCLLF_BNA` lines of the [trace](#trace) appear on the terminal, the first ones
+like this:
+
+```text
+[Bringup-1] RCLLF_BNA {"ev":"params","sync":0,"epoch":10403944782035913331,"delta":20000000,"lateness":[0,30000000],"capacity":[4,4],"retention":350000000,"timeout":300000000}
+[Bringup-1] RCLLF_BNA {"ev":"admit","sync":0,"input":0,"stamp":1795774719673914138,"key":"10403944782035913331:010f7fc4d402a11c0000000000003e03:1","tag":[1795774719673914138,0]}
+```
+
 ## Opting in
 
 The policy is an explicit choice in the node source. Nothing rewrites an existing
@@ -36,11 +64,11 @@ subscriptions:
 ```
 
 `lf_clock` means the publisher stamps with `now()`, which under rcllf is the logical
-tag of the reaction. Detecting that from the source is
-not implemented yet. Generation reports `RCLLF-H010` (info) for
+tag of the reaction. You must declare it: rcllf does not detect the stamp source from
+the code. Generation reports `RCLLF-H010` (info) for
 every admitted BNA synchronizer, as a reminder that the outcomes follow the rules
 below and not `ApproximateTime`. Any other `message_filters` form stays under
-[RCLLF-H003](execution-config.md#rcllf-h003).
+[RCLLF-H003](../reference/diagnostic-codes.md#rcllf-h003).
 
 ### Lost messages and `max_stamp_lag`
 
@@ -125,25 +153,15 @@ input records of a trace through the C++ engine.
 
 ## Federation
 
-Under `--federate` with centralized coordination, an input that comes from another
-federate is a cross-federate correspondence edge, and BNA works as in one process.
-Admissions move to the link delivery tag, one microstep after the link delivers,
-while a deadline stays at microstep 0. So an admission at a deadline's time can fall
-just after the deadline, and the outcome can differ from the single-process run.
-The `bna_example` README lists such a case.
-
-Under decentralized coordination a BNA input from another federate is an
-admitted cross-federate correspondence edge too. The safe-to-advance rule is the
-link's: the receiver federate processes the drain of tag t + d once its clock passes
-t + d plus the link's STP offset (`stp_offset`, default 10 ms), and the
-[budget check](federation.md#budget-check) can refuse a link whose declared bounds do not
-fit that offset. A record that arrives after its tag is reported lost at its arrival
-tag, so it reaches the engine as a missing report (with `max_stamp_lag`, a
-watermark raise) and its `message_lost` handler runs once. One difference from the
-centralized run: samples that a publisher sends in one burst reach the receiver at one
-tag, so they share a microstep instead of taking consecutive ones. A late sample then
-decides at the same tag as the sample that overtook it. `bna_example` shows both,
-see its README.
+Under `--federate`, an input that comes from another federate is a cross-federate
+correspondence edge and BNA works as in one process, under centralized and
+decentralized coordination alike. Two differences follow from the link. Admissions
+move to the link delivery tag, one microstep after the link delivers, while a
+deadline stays at microstep 0, so an admission at a deadline's time can fall just
+after the deadline. Under decentralized coordination a record that arrives after its
+tag is reported lost, and samples sent in one burst share a microstep. The
+[federation page](federation.md) describes the coordination modes and the
+[budget check](federation.md#budget-check). The `bna_example` README lists the cases.
 
 ## Differences from ApproximateTime
 

@@ -4,10 +4,9 @@ This chapter is the single definition of what rcllf means by *logical time*, *ta
 *after delay*, *federation*, and *determinism*, and, just as importantly, which of
 those words apply to which way of running a converted system.
 
-Lingua Franca supports more than one coordination scheme, and those schemes have
-**disjoint vocabularies**. rcllf implements a subset of them. Every page in these
-docs that uses one of those words is talking about exactly one regime. This chapter
-says which.
+Lingua Franca (LF) supports more than one coordination scheme, and those schemes have
+**disjoint vocabularies**. Each of those words belongs to exactly one regime, and this
+chapter says which.
 
 Read this before [Execution Model](architecture.md),
 [LF Code Generation](lf-generation.md), and [Federation](../features/federation.md),
@@ -18,9 +17,10 @@ all three use the vocabulary defined here.
 ## The three coordination regimes
 
 A *coordination regime* is the mechanism by which logical time advances consistently
-across all the reactors in a program. LF defines three, and rcllf exposes all three:
-the first is the default, the second is what `--federate` generates, and the third
-(decentralized) is experimental and opt-in with `--coordination decentralized`.
+across all the reactors in a program. LF defines three, and rcllf generates all three:
+the unfederated program is the default, `--federate` generates a centralized
+federation, and decentralized federation is experimental and opt-in with
+`--coordination decentralized`.
 
 ### Regime 1 (Unfederated)
 
@@ -68,16 +68,16 @@ progress.
 !!! warning "Experimental"
     `colcon lf-generate --federate ... --coordination decentralized` emits LF's
     `coordination: decentralized` target property and a per-cross-federate-input
-    STP (safe-to-process) offset with a logging tardy handler. Real
-    (not hand-authored) example: `pubsub_example`, 2 federates, see
+    STP (safe-to-process) offset with a logging tardy handler. Example:
+    `pubsub_example` with 2 federates, see
     [Federation: Coordination mode](../features/federation.md#coordination-mode).
-    "Experimental" means: it builds, runs, and its tardiness actually shows up
-    in a real container run. It does **not** mean the fault/availability story
-    below (the CAL tradeoff this regime exists for) is implemented. A stalled
-    federate still stalls the whole federation, same as centralized.
+    Experimental means that it builds and runs and that tardiness shows up as
+    described below. The fault and availability story below (the CAL tradeoff
+    this regime exists for) is **not** implemented: a stalled federate still
+    stalls the whole federation, as under centralized coordination.
 
-No RTI. Federates exchange messages peer-to-peer and each one decides locally when a
-tag is safe to process, using a **safe-to-process (STP) offset**: a per-federate
+The RTI still starts the federation and coordinates its stop, but it does not grant
+tag advances. Each federate decides locally when a tag is safe to process, using a **safe-to-process (STP) offset**: a per-federate
 allowance for how far physical time must lead a logical tag before that tag may be
 processed. Because the decision is local and the network is not omniscient, a message
 can arrive after its tag has already been processed (it is **tardy**) and the
@@ -87,7 +87,7 @@ That is exactly the point: by accepting the possibility of tardiness, a decentra
 federation can keep making progress when a peer is slow or unreachable. This is the
 **consistency-availability-latency (CAL) tradeoff**, and it exists **only** in this
 regime. A centralized federation trades availability for consistency by construction.
-an unfederated program has no tradeoff to make.
+An unfederated program has no tradeoff to make.
 
 **Vocabulary that belongs to this regime, and nowhere else:** STP offset, tardiness,
 tardy message, tardy handler, CAL tradeoff, availability under faults.
@@ -97,28 +97,20 @@ tardy message, tardy handler, CAL tradeoff, availability under faults.
 | Regime | Message routing | Tardiness | Fault / availability story | Status in rcllf |
 |---|---|---|---|---|
 | Unfederated (single process) | in-process event queue | n/a | n/a | **Validated** |
-| Federated, centralized | via RTI | **never tardy** | RTI is coordination bottleneck. All-or-nothing | **Experimental** |
+| Federated, centralized | via RTI | **never tardy** | RTI is coordination bottleneck. All-or-nothing | **Supported** for `--federate per-node`, **Experimental** for other partitions |
 | Federated, decentralized | peer-to-peer | **possible** (STP offsets) | CAL tradeoff space. Can stay available under faults | **Experimental** (STP/tardiness only. Fault story not implemented) |
 
-### Mixing the vocabularies is a documentation bug
+### Keeping the vocabularies apart
 
-The three vocabulary lists above are exclusive. Concretely:
+The three vocabulary lists above are exclusive:
 
-- Text about RTI-mediated coordination must never mention tardiness or STP offsets.
-  Under an RTI there are no tardy messages.
-- Text about tardiness, STP, tardy handlers, or the CAL tradeoff must be scoped to
-  decentralized federation specifically (`--coordination decentralized`), and never presented as a property of rcllf's federation in general, since
-  centralized is still the default and the only mode without an explicit flag.
-- Text about "LF federation" without a centralized/decentralized qualifier is
-  incomplete. It silently asserts that RTI-mediated coordination is the only kind LF
-  has, which is false at the language level even though it is true of everything this
-  tool generates today.
-
-If you find a page in these docs that breaks one of those rules, that is a bug worth
-reporting. Please
-[open an issue](https://github.com/CPS-RWTH/rcllf/issues/new). The
-distinction is easy to blur and hard to notice, so external eyes are genuinely useful
-here.
+- Under an RTI (centralized coordination) no message is ever tardy, so STP offsets
+  and tardiness do not apply.
+- Tardiness, STP offsets, tardy handlers and the CAL tradeoff apply only to
+  decentralized federation (`--coordination decentralized`), never to rcllf's
+  federation in general. Centralized is the default.
+- When these docs say "federation" without a qualifier, they mean centralized
+  federation, the default.
 
 ---
 
@@ -153,67 +145,56 @@ visible is fixed by the schedule, not by execution time) and *data-flow determin
 (which value a reader observes is fixed by the same schedule).
 
 The reason LET is worth naming rather than reinventing is that it is not a niche idea:
-it is the standard answer to scheduling jitter in automotive multicore software [4] and
-is standardized in AUTOSAR Classic's Timing Extensions.
+it is the standard answer to scheduling jitter in automotive multicore software [4].
 
 ### Why `after` delays are a LET-style contract, not a latency measurement
 
-This is the load-bearing paragraph of this chapter.
+Every connection between two nodes has a declared delay d. The default is 0; you set
+it with `--after-delay` or in `execution.yaml` (see
+[Execution Configuration](../features/execution-config.md#the-after-delay-default)).
+Where d is applied depends on the connection:
 
-rcllf's generator emits every inter-node topic connection with an `after`
-delay (the examples in this chapter use 5 msec, while the default is 0, one
-microstep,
-set via `--after-delay` or `execution.yaml`, see
-[Execution Configuration](../features/execution-config.md#the-after-delay-default)):
+- A service and a legacy topic edge are an LF connection with an `after` delay. So are
+  the goal request and goal response of an action; its result, feedback and cancel
+  channels use a fixed `after 1 msec`. This line is from the program generated for
+  `service_example`:
 
-```lf
-publisher.sensor_data -> listener.sensor_data after 5 msec
-```
+  ```lf
+  service_example_service_client.process_data_req -> service_example_service_server.process_data_req after 0
+  ```
+
+- An admitted topic edge (see
+  [Publication correspondence](#publication-correspondence-topic-edges)) is an LF
+  connection without `after`. The subscriber applies d when it hands the message to
+  the callback.
 
 That delay is a **declared logical-time contract**, in exactly the LET sense. The
 value published by the upstream reaction at tag `T` becomes observable to the
-downstream reaction at tag `T + 5 msec`, not "about 5 ms later", not "as soon as DDS
+downstream reaction at tag `T + d`, not "about d later", not "as soon as DDS
 delivers it", but *at that tag*, on every run, regardless of how long the transport
 actually took. Write-at-deadline, read-at-release, with the connection playing the
 role of the LET interval.
 
 It follows that:
 
-- **The `after` value is not a measurement.** A measured DDS latency distribution may
-  *inform your choice* of the value. You want the contract to be satisfiable, so the
-  declared delay should exceed the transport's worst case (see
+- **The delay is not a measurement.** A measured DDS latency distribution may
+  *inform your choice* of the value, for example so that a legacy edge's sample has
+  arrived by the time its reaction runs (see
   [Execution Configuration](../features/execution-config.md)). But the value is the contract, and
   the program's semantics are defined by the declared value alone. Describing `after`
   as "modelling DDS transport latency" gets the causality backwards: latency data
   constrains a design choice. It does not define the semantics.
 - **If the contract is not satisfiable, that is an observable failure, not a silent
-  slowdown.** If the payload has not arrived by the tag at which the reaction fires,
-  the ROS→LF binding's take policy decides what happens (skip, or bounded block). See
+  slowdown.** If the payload has not arrived when the reaction runs, an admitted edge
+  waits up to its timeout T and then reports the message missing, and a legacy edge
+  follows its take policy (skip, or bounded block). See
   [Take policy at the boundary](#take-policy-at-the-boundary) below.
 
-Lee and Lohstroh [5] give the precise account of how LF's logical-time model
-*generalizes* LET, and it is the citation to reach for on any LET-adjacent claim about
-LF. The generalization matters because LF is not LET:
-
-> In LET, logical time strictly matches physical time at each task invocation and
-> termination. In the reactor model, reactions are logically instantaneous and thus
-> compose without requiring explicit alignment. [6]
-
-So in LF, a reaction has *no* LET interval of its own. It is logically
-instantaneous, and reactions therefore compose without the designer aligning task
-periods and offsets by hand. The LET-style interval appears only where you *declare*
-it, as an `after` delay on a connection. `after` is an **opt-in, declared logical
-delay**, not an implicit task interval imposed on every component.
-
-### Distributed LET versus federated tags
-
-The LET lineage has its own answer to distribution: **SL-LET** (system-level LET)
-extends LET across a distributed system with explicit time zones and interconnect
-tasks that carry values between them [7]. LF federation answers the same question
-differently, one global tag order, enforced by coordination (an RTI, in
-[Regime 2](#regime-2-federated-centralized)) rather than by aligning per-zone LET
-schedules. They are alternative solutions to the same problem, not layers of one
-solution. If you know SL-LET, expect tags where you would expect time zones.
+LF is not LET, though. Lee and Lohstroh [5] show how LF's logical-time model
+generalizes LET: a reaction has no LET interval of its own, it is logically
+instantaneous, so reactions compose without the designer aligning task periods and
+offsets by hand. The LET-style interval appears only where you declare it, as a
+delay on a connection.
 
 ---
 
@@ -267,14 +248,12 @@ Two consequences worth stating plainly:
   the *program's meaning* independent of wall-clock accidents. Wall-clock behaviour is
   still an engineering problem, and the real-time ROS 2 literature is the right tool
   for it, see [below](#relation-to-real-time-ros-2-work).
-- Where a mechanism is only *partly* under LF's control, the docs must say so
-  explicitly. The house pattern is
-  [action_example](../examples/action-example.md)'s scope. Action feedback and
+- Where a mechanism is only *partly* under LF's control, the guarantee is narrower.
+  For example, in [action_example](../examples/action-example.md) action feedback and
   result run at repeatable tags only when both ends are inside the LF system and the
   server sends from callbacks that LF reactions run. A server whose only clients are
   outside the system takes their goals through a physical action, so its tags follow
-  arrival. Any determinism claim in these docs should be scoped that tightly.
-  Unscoped claims are bugs, same as mixed regime vocabulary.
+  arrival.
 
 ### The determinism claim
 
@@ -305,9 +284,7 @@ Not modeled, so outside the claim even when nothing is late:
 
 The [supported scope](../features/support-matrix.md) is narrower still.
 
-This is the claim rcllf is held to ("every run in which every message arrives within
-its timeout T gives identical outputs", with the conditions above written into it), and every guarantee, doc sentence and test
-assertion is written against it. A modeled message later than T counts as lost, and
+A modeled message later than T counts as lost, and
 the run must report it, never show a silent difference; a stamp-anchored message
 refused as `late`, `overrun`, `collision` or `after_stop` is such a report. The claim
 is not deterministic replay: rcllf records no outcome log to rerun. rcllf does not yet
@@ -342,15 +319,14 @@ wire.
 
 1. A legacy trigger whose write count is unknown, in `skip` mode, does not wait. A
    sample still on its way is not observed at that tag and is read at a later trigger.
-   It is counted only in `take_stats` `skipped`, with no warning (`take_mode.cpp`, the
-   `!known` return in `take_skip`). Within one program Fast DDS delivers in the publish
+   It is counted only in `take_stats` `skipped`, with no warning. Within one program Fast DDS delivers in the publish
    call, so only a link between federates is exposed.
 2. A legacy take measures its timeout from when it runs. A worker that runs its take
    late accepts a sample that arrived later than tag + T without any report. With a
    known write count the take still gets the counted sample, so the value does not
    change, but the lateness is not reported.
 3. Reader overflow before a writer's first take is not seen. The first sample taken
-   from a writer only sets the sequence baseline (`note_sequence`), and DDS raises no
+   from a writer only sets the sequence baseline, and DDS raises no
    event for a KeepLast replacement, so a sample replaced before that first take is
    lost silently.
 4. A subscription on an arrival-anchored external topic dispatches on arrival, so its
@@ -358,7 +334,7 @@ wire.
    external topic is inside it.
 5. After a reported miss on a legacy link, a lone late sample may be delivered one tag
    late, and with several writers the dropped sample may be another
-   writer's (probe P17f). The run carries the loss report, but the difference can
+   writer's. The run carries the loss report, but the difference can
    outlast the lost message.
 6. Application code that waits for discovery before it starts (the brake_fusion
    simulator holds its first step until its subscribers are there) starts at a tag that
@@ -385,9 +361,10 @@ binding's take policy (`ROS2_LF_TAKE_MODE`) decides:
   sample was taken when the publish returned, so the drain never waits.
 - A **legacy** trigger with a known write count polls for its samples up to
   `maxwait_ms` (default 100 ms) before it declares the miss, in `skip` and
-  `block` mode alike (`take_mode.cpp`).
-- A legacy trigger whose write count is unknown (`RCLLF_COUNT_PUBLISHES=0`, a publisher
-  outside any reaction) does not wait in `skip` mode (the default). `block` polls up
+  `block` mode alike.
+- A legacy trigger whose write count is unknown (a program generated with
+  [`RCLLF_COUNT_PUBLISHES=0`](../reference/environment-variables.md#rcllf_count_publishes)
+  set when running `colcon lf-generate`, or a publisher outside any reaction) does not wait in `skip` mode (the default). `block` polls up
   to the timeout.
 - A subscription on a declared external topic dispatches on arrival and never takes.
 
@@ -402,14 +379,15 @@ problem. Check the take timeout and the transport (reader depth, reliability, ho
 load) first. A larger `after` gives a legacy take more physical-time slack in real-time
 execution, but it also moves every callback tag on that link.
 
-!!! info "Take mode is now configurable, not just an env var"
-    The description above is the semantics. As of the execution-configuration
-    feature, `skip` vs `block` (and the block timeout) can be set **per node or per
-    subscription**, not only globally via `ROS2_LF_TAKE_MODE`. The env vars still work
-    as quick-experiment overrides. None of this changes the semantics on this page. Policy selects *which* of skip/block applies where and it never touches tag
-    semantics. See [Execution Configuration](../features/execution-config.md) for the
-    config file, precedence rules, and the block-timing footgun that comes with
-    per-subscription blocking.
+!!! info "Setting the take mode"
+    `skip` or `block`, and the block timeout, can be set per node or per subscription
+    in the execution configuration. The environment variables
+    [`ROS2_LF_TAKE_MODE`](../reference/environment-variables.md#ros2_lf_take_mode) and
+    [`ROS2_LF_MAXWAIT_MS`](../reference/environment-variables.md#ros2_lf_maxwait_ms)
+    override it for one run. The policy selects *which* of skip or block applies where.
+    It never changes tag semantics. See
+    [Execution Configuration](../features/execution-config.md) for the config file,
+    precedence rules, and the timing pitfall of per-subscription blocking.
 
 ---
 
@@ -449,202 +427,50 @@ which is what makes a failure reproducible.
 
 ## Publication correspondence (topic edges)
 
-A topic edge, in one process or across federates, that passes generation-stage admission
-dispatches the subscriber once per actual publish, with the exact sample that publish
-produced:
+A topic edge that passes admission at generation (an *admitted* edge) runs the
+subscriber's callback once per actual publish, with the exact sample that publish
+produced, at tag t + d. The generated program counts every publish, the publishing
+reaction sends that count to the subscriber over an LF connection without `after`, and
+the subscriber's drain reaction joins each record with its DDS sample. Each run ends
+with a typed outcome (`MATCHED`, `LOST`, `TIMED_OUT`, ...), and a reconcile summary at
+stop checks that every expected publish ended exactly once. This is what puts topic
+samples into the modeled input timeline of
+[the determinism claim](#the-determinism-claim).
 
-- The generated executable contains a publication gate: it defines `rcl_publish` and
-  its siblings, counts every publish per publisher from process start and records
-  which LF reaction (if any) published.
-- The publishing reaction sets the edge's output port only when its callback actually
-  published, carrying the count of records. The connection has no `after`.
-- The subscriber moves the records into a carrier and drains them at t+d, where d is
-  the edge's after-delay (default `0`). Every record due at a tag is
-  delivered at that tag, in one firing of the drain reaction, with one callback
-  invocation per record. Zero publishes give zero dispatches. Three
-  publishes give three dispatches, all at (t+d, 0) for d > 0. For d = 0 and a
-  publication at (t, m) all three run at (t, m) on an edge inside one process, whose
-  drain reaction is triggered by the record port itself, as an LF connection without
-  `after` delivers. A self edge and a cross-federate edge, whose records come over
-  `after 0`, deliver all three at (t, m+1).
-- Each dispatch joins its record with the DDS sample of the same publisher GID and
-  sequence number, retained by the ingress thread. The outcome is typed (`MATCHED`,
-  `LOST`, `TIMED_OUT`, ...), traced on the `RCLLF_TRACE_CALLBACKS` channel, and a
-  reconcile summary at shutdown checks that every expectation ended exactly once
-  (`reconciled`); a missing one is also warned when it is decided, rate-limited per
-  edge, and counted in the summary's `missing_total` beside it.
+A topic edge that is not admitted (a *legacy* edge) carries only a trigger. Its
+callback takes whatever sample sits in the reader when it runs, so the value it sees
+depends on wall-clock arrival. A receiver that runs behind its sender can take a
+sample published for a later tag, and one that runs ahead can miss the sample of its
+own tag and read it one trigger later.
 
-The ingress thread takes samples from the DDS reader, and a reader with KEEP_LAST
-depth 1 holds only the newest one. When a writer publishes twice at one tag and the
-ingress thread is preempted between the two, the second sample replaces the first in
-the reader and the first dispatch ends `LOST`. The binding therefore
-raises every admitted edge's reader to KEEP_LAST depth 8 at creation when the user
-asked for less, matching the carrier capacity. Startup logs the actual depth per
-admitted edge (`reader depth 8, user 1`), and `get_actual_qos()` on that subscription
-reports 8. Legacy edges, KEEP_ALL readers and readers already at depth 8 or more keep
-the user's QoS. A node with two subscriptions on one topic (twins) has each admitted
-edge matched by creation order, so a legacy twin keeps its depth. A subscription that a
-worker thread creates on a node built in a generated node factory or the component
-loader is raised as well. An admitted edge whose reader still holds fewer than 8
-samples, for example one created on a node built outside both, refuses startup with a
-fatal log line that names the node, the topic and the depth.
-
-The same hook makes the reader of a cross-federate admitted edge BEST_EFFORT:
-an ingress edge, whose publisher runs in another federate. A loss on such an
-edge is detected by the record that travels over the federation link, so DDS
-retransmission adds nothing the correspondence table needs, and a RELIABLE stateful
-reader withholds every sample behind a sequence gap until the writer's history evicts
-the lost one. The reader of a same-federate admitted edge keeps the reliability the
-user asked for: a loss there is one lost call with no link to stall behind, and
-the user's RELIABLE is the right choice. Under centralized coordination that is a self-sustaining stall: the
-drain reaction waits the full timeout for the withheld sample, the stalled federate
-delays the publication that would evict the lost one, and the next drain waits again,
-once per slot of the writer's history, so one lost message became 10 lost calls and
-could end the other federate with `publisher_late` (seen in early pilot runs; that counter no longer exists). Startup logs
-the effective reliability next to the depth (`reader best effort, user reliable`) and
-RCLLF-H001 judges the reliability the user declared; only an explicit RELIABLE
-request counts as reliable, a SYSTEM_DEFAULT request is logged by name (`user
-system default`) and judged best effort. A cross-federate reader the binding could
-not relax (created outside the node's construction scope, still RELIABLE) is refused
-at startup like a too shallow reader, since its depth alone would admit it with the
-cascade intact; the same reader on a same-federate edge is admitted. `RCLLF_ADMITTED_READER_RELIABLE=1` keeps the user's reliability and
-lifts that refusal, for comparison runs only.
-
-Startup refuses an admitted edge (exit 1, before tag 0) when the RMW is not
-`rmw_fastrtps_cpp`, the publication mode is not synchronous, an XML profile is
-configured, intra-process is on, an endpoint is not VOLATILE, or the gate is not
-linked. An admitted edge never falls back to the legacy path.
-
-Edges that stay on the legacy path (one stub event per reaction, the subscriber takes
-whatever sample is in the reader), each listed with its reason at startup and in the
-generated `correspondence.json`: a cross-federate edge with `after 1 nsec` under
-decentralized coordination (its sender needs at least 2 ns), a
-BoundedNearestToAnchor input over a link under decentralized coordination, `transient_local`
-QoS, fan-in groups that cannot be admitted as a whole (see
-[Several publishers into one subscription](#several-publishers-into-one-subscription)),
-publishing callbacks that are not
-timer or subscription reactions (a private, non-virtual member helper counts as the
-reactions that call it; a helper with an unknown caller, or called from the
-constructor, stays legacy), publishing callbacks spread over more than one
-callback group (`publisher_callback_split`), serialized publishes (`unsupported_api`),
-edges whose bounds are unknown
-(`burst_unbounded`, `period_unknown`, `rate_unbounded`, see
-[Correspondence bounds](../features/execution-config.md#correspondence-bounds)), services
-and actions.
-
-An edge whose publisher belongs to a lifecycle node is admitted. The
-binding binds every publisher the node creates on the edge's topic, also one made in
-`on_configure` after startup or made again after a cleanup, so each of its publishes is
-joined at its own tag. A publisher made later that is not VOLATILE ends the run with
-exit 1. A subscription of a lifecycle node is admitted too, also one that a hook
-creates or resets. Each new reader is bound when the node creates it and
-passes the startup checks again (intra-process off, VOLATILE, its depth at least the
-required KEEP_LAST depth). Ingress stops taking from the old reader. A record already
-taken keeps its outcome, and every record still open for the old reader ends
-`READER_REPLACED` once, traced and counted in the reconcile, as does a record published
-before the new reader's creation tag. When the node holds more subscriptions on the
-topic than the analysis found, rcllf cannot tell which one the RID names: it refuses
-the new reader with `rebind_identity`, logs it and fails the reconcile instead of
-guessing. While the reader the edge is bound to still lives, a new reader made next to
-it could be its replacement or an unrelated twin, so the check waits until the old one
-is released and runs at the next reaction of the RID. The usual
-`sub_ = create_subscription(...)` in `on_configure` makes the new reader before the
-assignment releases the old one, and the assignment happens within the hook's tag, so
-the new reader is admitted at a later tag. "Later" compares the whole tag, so the next
-microstep already counts. If the old reader still lives at a later tag (or at
-shutdown), the new one is a twin and is refused with `rebind_identity`. A second new
-reader that arrives while the first still waits is refused the same way: with two
-candidates pending, rcllf cannot prove which one the RID names. While a new reader
-waits, ingress does not take from it, so its samples stay in its DDS queue (KEEP_LAST
-at the edge's reader depth, 8 by default) and are taken once it is admitted. A sample
-that overflows that queue is lost there, and its record ends through the ordinary
-missing path. Ingress holds a reader only by its rcl handle and a weak reference,
-never by a `SubscriptionBase` shared pointer, so the node's drop of the old reader is
-what releases it. A reader
-ingress cannot admit (no C++ introspection type support) stops the edge, and ingress
-retires the reader it had.
-
-A reader belongs to the records published after its creation tag. Until the new
-reader is bound, ingress may still take from the old one. A sample the old reader
-takes of a record published after a later reader's creation tag is `STALE_READER`:
-it is counted but never matched, whichever reader the binding has bound by then. The
-record waits for the new reader's sample. The same holds for a sample the old reader
-takes before the publish is committed, and for an early sample on a cross-federate
-edge whose record arrives later: the publish tag decides once it is known. If the new
-reader's sample never arrives, the record ends through the ordinary missing path
-(`LOST` or `TIMED_OUT`). This is a known loss window: DDS matches a new reader to the
-writer some time after it is created, and a record published in between reaches only
-the old reader. The reconcile counts some of these records separately, as
-`lost_discovery_gap` on the edge. That counter covers exactly the records of which
-the old reader took a copy (classified `STALE_READER`) and which then ended missing.
-A discovery-gap loss that the old reader never took a copy of (for example a record
-published after the old reader was released) is not in that counter. It ends as an
-ordinary `LOST` or `TIMED_OUT`, indistinguishable from a network loss. A reader created
-off an LF worker after LF started has no tag that orders it against the publishes,
-so the binding refuses it with `rebind_untagged` instead of guessing a tag. The
-re-created reader of a lone lifecycle subscription is deepened to the edge's depth
-like the first one.
-
-On a legacy edge the value a subscriber reads at a tag depends on when the sample
-arrives in wall time. The LF link carries only a trigger, and the reaction takes
-whatever sample sits in the reader when it runs. A receiver that runs behind its sender
-in wall time can take a sample published for a later tag, and one that runs ahead can
-miss the sample of its own tag and read it one trigger later.
-
-A node with two subscriptions on one topic gets one admitted edge per subscription when
-each subscription has its own callback. The binding picks each edge's subscription by
-the creation order of its reaction ID. Two subscriptions bound to the same callback
-cannot be told apart and stay legacy (`ambiguous_endpoint`).
-
-A topic that one node publishes from several callbacks in one callback group is
-admitted. Those callbacks run as reactions of one LF reactor, which LF executes one
-after another in a fixed order. Every publication becomes a record, in that order,
-and the subscriber receives all of them at one tag, one callback invocation each.
+Which edges are admitted, how you see it in the generated code, the logs and the
+traces, the reader QoS changes and the limits are on the
+[Publication Correspondence](../features/correspondence.md) feature page.
 
 ### Several publishers into one subscription
 
-The admitted edges into one subscription form one fan-in group.
-Several nodes that publish on the topic of one subscription callback, two instances of
-one class or different nodes, each keep their own edge, record link, carrier and
-expectations, and share one reader, one drain reaction and one delivery order. The
-group delivers by three keys:
+Several admitted edges into one subscription form a fan-in group with one fixed
+delivery order: first the release tag (publication tag plus d), then the publisher's
+rank (the alphabetical position of its LF instance name), then publication order. Two
+publishers whose timers fire at the same tags are therefore delivered
+`a0 b0 a1 b1 ...` in every run, where stock ROS 2 delivers them in arrival order. See
+[Publication Correspondence: Several publishers](../features/correspondence.md#several-publishers-into-one-subscription)
+and, for a missing sample in such a group,
+[Missing Messages](../features/missing-messages.md#several-publishers-into-one-subscription).
 
-1. The release tag: the publication tag plus the after-delay d, as LF's `after`
-   computes it. For d = 0 it is the publication tag itself on an edge inside one process
-   and the next microstep of the publication tag on a cross-federate edge.
-2. On an equal release tag, the rank of the publisher: the position of its LF instance
-   name in the lexicographic order of the group's instance names. Generation fixes the
-   ranks once from the whole system, before `--federate` splits it, and ships them as
-   `fan_in_rank` in `correspondence.json`, so every federate orders the group the same
-   way.
-3. On an equal publisher, publication order.
+## Background
 
-Two publishers whose timers fire at the same tags are therefore delivered alternately,
-`a0 b0 a1 b1 ...`, in every run, where stock ROS 2 delivers them in the order the samples
-happen to arrive. A missing sample takes its place in that order, see
-[Missing messages](../features/missing-messages.md#several-publishers-into-one-subscription).
-The binding counts every delivery whose key is below an earlier one of its group
-(`order_violations` in the reconcile), and a nonzero count fails the run with exit
-code 3.
+**Distributed LET.** The LET lineage has its own answer to distribution: SL-LET
+(system-level LET) extends LET across a distributed system with explicit time zones
+and interconnect tasks that carry values between them [7]. LF federation answers the
+same question with one global tag order, enforced by coordination (an RTI, in
+[Regime 2](#regime-2-federated-centralized)), rather than by aligning per-zone LET
+schedules. If you know SL-LET, expect tags where you would expect time zones.
 
-A group is admitted whole or not at all. When one member is refused for its own reason,
-every member stays legacy, with `fan_in_member_refused` and a note that names the refused
-one. A group also stays legacy when:
-
-- the members' delays differ (`fan_in_release_mismatch`; for a `join: deferred` group
-  the delay plus the chained timeout),
-- some members cross federates and others do not (`fan_in_mixed_locality`),
-- a member's publisher is the subscribing node itself (`fan_in_self_loop`),
-- a member rebinds with a lifecycle node (`fan_in_rebind`),
-- two members share one publisher instance (`fan_in_shared_publisher`),
-- the subscription is a BoundedNearestToAnchor input (`fan_in_bna_input`; generation
-  then stops with `RCLLF-H003`, as for any legacy input of that synchronizer).
-
-The reader depth must hold the sum of the members' bursts, since one reader keeps the
-history of every writer (`reader_depth_below_burst`). A writer outside the system
-description, for example `ros2 topic pub`, is `UNRESOLVED`: its samples are counted and
-never delivered. An experiment with an example package of the development repository
-that does not ship in the release compares this order with stock ROS 2.
+**Reactors and LET.** Menard et al. state the difference in one line: "In LET,
+logical time strictly matches physical time at each task invocation and termination.
+In the reactor model, reactions are logically instantaneous and thus compose without
+requiring explicit alignment." [6]
 
 ## Relation to real-time ROS 2 work
 
@@ -695,6 +521,6 @@ its closest prior art.
     LITES* 11(1), 2025.
     <https://drops.dagstuhl.de/entities/document/10.4230/LITES.11.1.1>
 13. ROS 2 documentation, "About Executors."
-    <https://docs.ros.org/en/humble/Concepts/Intermediate/About-Executors.html>
+    <https://docs.ros.org/en/jazzy/Concepts/Intermediate/About-Executors.html>
 14. S. Bateni et al. "Risk and Mitigation of Nondeterminism in Distributed
     Cyber-Physical Systems." *MEMOCODE 2023*, pp. 1 to 11.

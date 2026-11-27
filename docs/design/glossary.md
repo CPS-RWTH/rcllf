@@ -1,118 +1,183 @@
 # Glossary
 
-Lingua Franca (LF) terms, explained for ROS 2 developers who have never used LF before.
-Each entry links to the rcllf concept or page where it matters in practice.
+Lingua Franca (LF) and rcllf terms, explained for ROS 2 developers who have
+never used LF. Each entry links to the page where the term matters in practice.
 
-## Reactor
+## LF terms
 
-The LF equivalent of a component: a named unit with input **ports**, output **ports**,
-**timers**, internal state, and **reactions**. `colcon lf-generate` emits one reactor per
-ROS 2 node class. See [Architecture](architecture.md).
+### Reactor
 
-## Reaction
+The LF unit of structure: a named block with input and output **ports**,
+**timers**, **actions**, internal state and **reactions**. `colcon lf-generate`
+turns every ROS 2 node into an outer shell reactor that holds the node's ports,
+plus one sub-reactor per [callback group](#callback-group) that holds its
+callbacks. See [LF Code Generation](lf-generation.md#node-structure).
 
-A block of code inside a reactor that runs in response to a **trigger**, a timer firing,
-a port receiving a value, or `startup`/`shutdown`. Reactions are the LF equivalent of a
-ROS 2 callback (timer callback, subscription callback, …). Each generated reactor has a
-`startup` reaction that binds it to a live ROS 2 node instance, plus one reaction per timer
-or subscription. See [LF Code Generation](lf-generation.md).
+### Reaction
 
-## Logical time
+A block of code inside a reactor that runs when a **trigger** is present: a
+timer fires, a port receives a value, an action is scheduled, or the program
+starts or stops. A reaction is the LF counterpart of a ROS 2 callback. Each
+generated reaction calls one real callback of your node. The shell reactor
+also has a `startup` reaction that binds it to the running ROS 2 node. See
+[LF Code Generation](lf-generation.md).
 
-A discrete, deterministic clock that every reactor in a program shares. Logical time only
-advances between reactions. It does not track wall-clock time directly. Two reactions
-scheduled for the same logical **tag** are guaranteed to see a consistent, repeatable
-ordering, unlike two ROS 2 callbacks racing on wall-clock time under a normal executor. See
-[ADR 0001, LF Is the Sole Time Authority](adr/0001-lf-owns-time.md).
+### Logical time
 
-## Physical time
+A clock that every reactor in a program shares and that only the LF scheduler
+advances. All reactions at one logical time see that same time, however long
+they take to run. Reactions at the same **tag** run in an order fixed by the
+program, unlike ROS 2 callbacks that race on wall-clock time. In rcllf, the
+node's ROS clock reads logical time. See
+[ADR 0001: LF owns time](adr/0001-lf-owns-time.md) and
+[Time & Coordination](time-and-coordination.md#logical-time-and-tags).
 
-Ordinary wall-clock time. LF programs can read physical time (e.g. for logging or
-diagnostics) but must not use it to make scheduling decisions. Only logical time drives
-what runs next. In rcllf, `steady_clock::now()` still returns wall time and is
-explicitly *not* intercepted. See
+### Physical time
+
+Ordinary wall-clock time. LF waits for physical time to reach a tag before it
+runs that tag's reactions, but which reactions run, and in what order, is
+decided by logical time only. In rcllf, `std::chrono::steady_clock::now()`
+still returns wall time. See
 [Troubleshooting](../reference/troubleshooting.md#steady_clocknow-returns-wall-time).
 
-## Tag
+### Tag
 
-A pair `(logical time, microstep)` that uniquely and totally orders every event in an LF
-program. Two events at the same logical time but different microsteps are still
-deterministically ordered. This is what lets reactor-c guarantee reproducible callback
-interleaving where a ROS 2 executor cannot.
+A pair (logical time, [microstep](#microstep)) that orders every event in an
+LF program. Two events at the same logical time but different microsteps are
+still ordered, and the order is the same in every run.
 
-## `after` delay
+### Microstep
 
-An annotation on a connection between two reactor ports (`a.out -> b.in after 5 msec`)
-that adds a fixed logical-time offset before the downstream reaction fires. rcllf uses
-this to model DDS transport latency as an explicit, deterministic parameter instead of an
-unpredictable wall-clock race. See [Execution Configuration](../features/execution-config.md).
+The second part of a [tag](#tag). An event one microstep later happens at the
+same logical time, but strictly after. A connection with `after 0` delivers
+its value one microstep after it was sent, which is how rcllf orders a service
+request before its response at one logical time.
 
-## Coordination regime
+### `after` delay
 
-Which mechanism keeps logical time consistent across all the reactors in a program. LF
-defines three, **unfederated** (single process), **federated centralized** (RTI-mediated),
-and **federated decentralized** (peer-to-peer, STP-based), and each has its own exclusive
-vocabulary. rcllf exposes the first two. Which regime a page is talking about determines
-which of the terms below apply. See
+A declared logical delay on a connection between two ports, for example
+`a.out -> b.in after 5 msec`. A value sent at tag T is seen downstream at
+T plus the delay, no matter how long the transport actually took. It is a
+contract, not a measurement of DDS latency. See
+[Time & Coordination](time-and-coordination.md#why-after-delays-are-a-let-style-contract-not-a-latency-measurement)
+and [The after-delay default](../features/execution-config.md#the-after-delay-default).
+
+### Physical action
+
+An LF event source that code outside LF schedules, stamped with the physical
+time at which it was scheduled. rcllf uses physical actions where a sample from
+outside the LF program enters it, for example a declared external topic. A
+**logical action** is scheduled from inside a reaction at a logical time.
+
+### Worker
+
+An LF worker thread. The program runs the reactions of one tag on its workers,
+so reactions without a dependency between them may run in parallel. The
+number is the [`workers`](../features/execution-config.md#workers) setting.
+
+### LET (Logical Execution Time)
+
+A timing model in which a task's inputs and outputs are fixed to logical
+points in time, however long the task actually runs. rcllf's declared delays
+give communication between nodes this kind of contract. See
+[What LET is](time-and-coordination.md#what-let-is).
+
+### Coordination regime
+
+How logical time stays consistent across all reactors of a program. LF has
+three: **unfederated** (one process), **federated, centralized** (an RTI grants
+every time advance) and **federated, decentralized** (each federate decides
+locally). rcllf generates all three. Unfederated is the default, centralized
+comes from `--federate`, and decentralized is experimental. Each regime has its
+own vocabulary, so a page always says which regime it means. See
 [The three coordination regimes](time-and-coordination.md#the-three-coordination-regimes).
 
-## Federate / Federation
+### Federate / Federation
 
-**Describes the *centralized* coordination regime, the only one rcllf generates.**
+A **federate** is a part of the LF program that runs as its own process. A
+**federation** is a set of federates that share one logical timeline across
+processes or machines. In rcllf it comes from `colcon lf-generate --federate`.
+DDS still carries the data. Under centralized coordination the RTI keeps the
+federates' logical clocks consistent, and a federate waits instead of
+receiving a message late. See [Federation](../features/federation.md) and
+[Regime 2](time-and-coordination.md#regime-2-federated-centralized).
 
-A **federate** is one reactor (or reactor subtree) that runs as its own OS process. A
-**federation** is a set of federates coordinated by a shared logical clock, split across
-process (or machine) boundaries. In rcllf, federation is opt-in via
-`colcon lf-generate --federate`. DDS still carries the data, but the RTI (below)
-keeps every federate's logical clock in lockstep. Messages are never tardy in this
-regime: a federate waits rather than receiving something late. LF also defines a
-decentralized federation mode with different semantics that rcllf does not expose (see
-below). See [Federation](../features/federation.md) and
-[Regime 2, Federated, centralized](time-and-coordination.md#regime-2-federated-centralized).
+### RTI (Run-Time Infrastructure)
 
-## RTI (Run-Time Infrastructure)
+The process that coordinates a federation. It carries no application data. In
+a centralized federation it tells each federate when it may advance its
+logical time, so the federation cannot progress while the RTI or any federate
+is unreachable. In a decentralized federation the RTI still starts the
+federation and coordinates its stop, but it does not grant time advances. See
+[Federation](../features/federation.md).
 
-**Centralized coordination only.** The daemon that coordinates logical time across
-federates in a federation. It does not carry application data (DDS still does that). It
-only tells each federate when it is safe to advance its logical clock. It is therefore the
-single point of coordination and the coordination bottleneck. A federation cannot make
-progress if the RTI or any federate is unreachable. See
-[Federation](../features/federation.md) for the all-or-nothing implications. In a
-decentralized federation the RTI still starts and stops the federation, but it does not
-mediate tag advance.
+### Decentralized coordination / STP / Tardiness
 
-## Decentralized coordination / STP / Tardiness
+The federated regime without central time grants. rcllf generates it as an
+experimental option (`--coordination decentralized`, see
+[Federation](../features/federation.md)). Each federate decides locally when a
+tag is safe to process, using a **safe-to-process (STP) offset**. A message can
+then arrive after its tag was processed; it is **tardy**, and a **tardy
+handler** deals with it. These terms apply only to this regime. See
+[Regime 3](time-and-coordination.md#regime-3-federated-decentralized).
 
-**LF defines this regime. rcllf exposes it as experimental** (`--coordination
-decentralized`, see [Federation](../features/federation.md)). In a decentralized
-federation the RTI only coordinates startup and shutdown: federates exchange messages
-peer-to-peer and each decides locally when a
-tag is safe to process, using a **safe-to-process (STP) offset**. Because that decision is
-local, a message can arrive after its tag was processed (it is **tardy**) and the program
-supplies a **tardy handler** for that case. This is what makes the consistency-availability-latency
-(CAL) tradeoff possible, and all of this vocabulary applies **only** to this regime, never
-to rcllf's RTI-based federation. See
-[Regime 3, Federated, decentralized](time-and-coordination.md#regime-3-federated-decentralized).
+### `lfc`
 
-## LET (Logical Execution Time)
+The Lingua Franca compiler. It takes the generated `.lf` file and produces the
+C and C++ sources of the reactor-c program, which the generated colcon package
+then compiles. See [Architecture](architecture.md).
 
-A scheduling model, closely related to LF's design, in which a task's observable inputs
-and outputs are fixed to specific logical-time points regardless of how long the task
-actually takes to execute on real hardware. rcllf's generated `after` delays give
-cross-node communication LET-style semantics: a *declared* logical-time contract, not a
-measurement of transport latency. See
-[Logical time, tags, and the LET connection](time-and-coordination.md#logical-time-tags-and-the-let-connection)
-for the full treatment and citations.
+## rcllf terms
 
-## `lfc`
+### Callback group
 
-The Lingua Franca compiler. It takes a `.lf` source file (generated by
-`colcon lf-generate`) and produces C++ sources that implement the reactor-c
-scheduler and all declared reactors, ready to be compiled into a standalone binary. See
-[lfc Path Internals](../design/architecture.md).
+A ROS 2 grouping that tells the executor which callbacks may run in parallel.
+rcllf maps each MutuallyExclusive group to one sub-reactor and each callback of
+a Reentrant group to its own sub-reactor. See
+[Callback Groups](callback-groups.md).
 
-## RID (Reaction ID)
+### RID (Reaction ID)
 
-A stable integer, assigned by the generator to every `(node class, callback)` pair, that
-forms the shared vocabulary between the generated `.lf` file and the `ros2_lf_binding`
-library. See [ADR 0002, RID Assignment and Stability](adr/0002-rid-assignment.md).
+A number the generator assigns to every (node class, callback) pair. The
+generated `.lf` file and the runtime binding both use it to name a callback.
+See [Architecture: Reaction IDs](architecture.md#reaction-ids) and
+[ADR 0002](adr/0002-rid-assignment.md).
+
+### Admitted edge / Legacy edge
+
+A topic **edge** is one publisher node and one subscriber node on one topic.
+An **admitted** edge has [publication correspondence](#publication-correspondence):
+each publish runs the subscriber's callback exactly once, with exactly that
+sample. A **legacy** edge only triggers the subscriber's reaction, and the
+callback takes whatever sample its reader holds. See
+[Publication Correspondence](../features/correspondence.md).
+
+### Publication correspondence
+
+The rcllf guarantee for admitted edges: every publish maps to exactly one
+subscriber callback run at a fixed tag, and every run ends with a typed outcome
+such as `MATCHED` or `LOST`. See
+[Publication Correspondence](../features/correspondence.md).
+
+### Stub (`stub_t`)
+
+The type of ports that carry a count instead of a message: an `int32_t`. A
+service, action or legacy topic port holds how many requests, responses or
+publishes happened, and the receiving reaction runs its callback that many
+times. The message itself travels over DDS.
+
+### Take mode
+
+How a legacy subscription takes its sample when its reaction runs. A legacy
+subscription that knows how many samples to expect waits for them up to a
+timeout. When that count is unknown, `skip` (the default) does not wait for a
+sample that has not arrived, and `block` waits up to the timeout. See
+[Take policy at the boundary](time-and-coordination.md#take-policy-at-the-boundary).
+
+### Diagnostic code
+
+A code such as `RCLLF-H009` that the analyzer, the generator or the running
+program prints for a pattern it cannot convert or that weakens a guarantee. An
+error stops generation unless it is acknowledged in `execution.yaml`. Every
+code is listed on
+[Diagnostic Codes](../reference/diagnostic-codes.md).
